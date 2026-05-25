@@ -1,18 +1,33 @@
 # AssessPro – Academic Evaluation System
 
-A full stack academic evaluation platform for faculty members to create and manage assessments.
+A full stack academic evaluation platform for faculty members to create, manage, publish, and analyze assessments.
 
 ---
 
-## Tech Stack
+# Features
 
-### Frontend
+* Faculty Authentication
+* Create Assessments
+* Draft Management
+* Publish Assessments
+* Edit & Delete Assessments
+* Live Assessment Preview
+* Search Assessments
+* Analytics Dashboard
+* Recent Activity Tracking
+
+---
+
+# Tech Stack
+
+## Frontend
 
 * Next.js
 * React.js
 * Tailwind CSS
+* Recharts
 
-### Backend
+## Backend
 
 * FastAPI
 * MongoDB
@@ -90,6 +105,15 @@ Backend runs on:
 
 ```bash
 http://127.0.0.1:8000
+```
+
+---
+
+# Faculty Login Credentials
+
+```text
+Email: admin@gmail.com
+Password: admin123
 ```
 
 ---
