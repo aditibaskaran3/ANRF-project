@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 import { useRouter } from "next/navigation";
 
 import toast from "react-hot-toast";
 
-export default function LoginPage() {
+export default function RegisterPage() {
 
   const router = useRouter();
 
@@ -16,20 +16,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
 
-  // CHECK EXISTING LOGIN
-  useEffect(() => {
-
-    const token = localStorage.getItem("token");
-
-    if (token) {
-
-      router.push("/");
-    }
-
-  }, []);
-
-
-  const loginUser = async (e) => {
+  const registerUser = async (e) => {
 
     e.preventDefault();
 
@@ -46,7 +33,7 @@ export default function LoginPage() {
       setLoading(true);
 
       const response = await fetch(
-        "http://127.0.0.1:8000/auth/login",
+        "http://127.0.0.1:8000/auth/register",
         {
           method: "POST",
           headers: {
@@ -70,27 +57,15 @@ export default function LoginPage() {
       }
 
 
-      // STORE TOKEN
-      localStorage.setItem(
-        "token",
-        data.access_token
-      );
+      toast.success("Registration successful");
 
-      // STORE EMAIL
-      localStorage.setItem(
-        "facultyEmail",
-        email
-      );
-
-      toast.success("Login successful");
-
-      router.push("/");
+      router.push("/login");
 
     } catch (error) {
 
       console.error(error);
 
-      toast.error("Login failed");
+      toast.error("Registration failed");
 
     } finally {
 
@@ -105,7 +80,6 @@ export default function LoginPage() {
 
       <div className="w-full max-w-md bg-white border border-slate-200 rounded-[30px] p-10 shadow-lg">
 
-        {/* HEADER */}
         <div className="mb-10 text-center">
 
           <h1 className="text-5xl font-bold text-slate-900 mb-3">
@@ -113,15 +87,14 @@ export default function LoginPage() {
           </h1>
 
           <p className="text-slate-500 text-lg">
-            Faculty Authentication Portal
+            Faculty Registration Portal
           </p>
 
         </div>
 
 
-        {/* FORM */}
         <form
-          onSubmit={loginUser}
+          onSubmit={registerUser}
           className="space-y-6"
         >
 
@@ -134,7 +107,7 @@ export default function LoginPage() {
 
             <input
               type="email"
-              placeholder="admin@gmail.com"
+              placeholder="faculty@college.edu"
               className="w-full border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 p-5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition"
               value={email}
               onChange={(e) =>
@@ -154,7 +127,7 @@ export default function LoginPage() {
 
             <input
               type="password"
-              placeholder="Enter password"
+              placeholder="Create password"
               className="w-full border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 p-5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition"
               value={password}
               onChange={(e) =>
@@ -173,22 +146,22 @@ export default function LoginPage() {
           >
 
             {loading
-              ? "Signing In..."
-              : "Sign In"}
+              ? "Creating Account..."
+              : "Create Account"}
 
           </button>
 
 
-          {/* REGISTER LINK */}
+          {/* LOGIN LINK */}
           <p className="text-center text-slate-500 mt-6">
 
-            Don't have an account?
+            Already have an account?
 
             <span
-              onClick={() => router.push("/register")}
+              onClick={() => router.push("/login")}
               className="text-slate-900 font-semibold cursor-pointer ml-2 hover:underline"
             >
-              Create Account
+              Sign In
             </span>
 
           </p>

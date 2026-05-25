@@ -1,7 +1,20 @@
+"use client";
+
 export default function Sidebar({
   sidebarOpen,
-  setSidebarOpen
+  setSidebarOpen,
+  activeSection,
+  setActiveSection
 }) {
+
+  const menuItems = [
+    "Dashboard",
+    "Create Assessment",
+    "Drafts",
+    "Published",
+    "Analytics"
+  ];
+
 
   return (
 
@@ -64,69 +77,41 @@ export default function Sidebar({
           {/* NAVIGATION */}
           <div className="space-y-2">
 
-            <button className="w-full flex items-center gap-3 bg-sky-600 hover:bg-sky-700 transition px-4 py-3 rounded-xl">
+            {menuItems.map((item) => (
 
-              <div className="w-2 h-2 rounded-full bg-white" />
+              <button
+                key={item}
+                onClick={() =>
+                  setActiveSection(item)
+                }
+                className={`w-full flex items-center gap-3 transition px-4 py-3 rounded-xl
 
-              {sidebarOpen && (
-                <span className="font-medium text-sm">
-                  Dashboard
-                </span>
-              )}
+                ${activeSection === item
+                  ? "bg-sky-600 text-white"
+                  : "text-slate-300 hover:bg-slate-800"
+                }`}
+              >
 
-            </button>
+                <div
+                  className={`w-2 h-2 rounded-full
 
+                  ${activeSection === item
+                    ? "bg-white"
+                    : "bg-slate-400"
+                  }`}
+                />
 
-            <button className="w-full flex items-center gap-3 text-slate-300 hover:bg-slate-800 transition px-4 py-3 rounded-xl">
+                {sidebarOpen && (
 
-              <div className="w-2 h-2 rounded-full bg-slate-400" />
+                  <span className="font-medium text-sm">
+                    {item}
+                  </span>
 
-              {sidebarOpen && (
-                <span className="text-sm">
-                  Create Assessment
-                </span>
-              )}
+                )}
 
-            </button>
+              </button>
 
-
-            <button className="w-full flex items-center gap-3 text-slate-300 hover:bg-slate-800 transition px-4 py-3 rounded-xl">
-
-              <div className="w-2 h-2 rounded-full bg-slate-400" />
-
-              {sidebarOpen && (
-                <span className="text-sm">
-                  Drafts
-                </span>
-              )}
-
-            </button>
-
-
-            <button className="w-full flex items-center gap-3 text-slate-300 hover:bg-slate-800 transition px-4 py-3 rounded-xl">
-
-              <div className="w-2 h-2 rounded-full bg-slate-400" />
-
-              {sidebarOpen && (
-                <span className="text-sm">
-                  Published
-                </span>
-              )}
-
-            </button>
-
-
-            <button className="w-full flex items-center gap-3 text-slate-300 hover:bg-slate-800 transition px-4 py-3 rounded-xl">
-
-              <div className="w-2 h-2 rounded-full bg-slate-400" />
-
-              {sidebarOpen && (
-                <span className="text-sm">
-                  Analytics
-                </span>
-              )}
-
-            </button>
+            ))}
 
           </div>
 

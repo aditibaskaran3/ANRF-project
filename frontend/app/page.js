@@ -10,16 +10,27 @@ import Sidebar from "./components/Sidebar";
 import Navbar from "./components/Navbar";
 import QuestionCard from "./components/QuestionCard";
 import AssessmentCard from "./components/AssessmentCard";
+import PreviewPanel from "./components/PreviewPanel";
+import AnalyticsChart from "./components/AnalyticsChart";
+import RecentActivity from "./components/RecentActivity";
 
 export default function Home() {
 
   const router = useRouter();
 
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+  const [activeSection, setActiveSection] = useState("Dashboard");
+
   const [title, setTitle] = useState("");
+
   const [showPreview, setShowPreview] = useState(false);
+
   const [savedAssessments, setSavedAssessments] = useState([]);
+
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [editingAssessmentId, setEditingAssessmentId] = useState(null);
 
@@ -44,6 +55,10 @@ export default function Home() {
     if (!token) {
 
       router.push("/login");
+
+    } else {
+
+      setCheckingAuth(false);
     }
 
   }, []);
@@ -103,7 +118,7 @@ export default function Home() {
     try {
 
       const response = await fetch(
-        "http://127.0.0.1:8000/assessment/all"
+        "http://localhost:8000/assessment/all"
       );
 
       const data = await response.json();
@@ -133,6 +148,8 @@ export default function Home() {
     ]);
 
     setEditingAssessmentId(null);
+
+    setActiveSection("Create Assessment");
 
     window.scrollTo({
       top: 0,
@@ -210,7 +227,8 @@ export default function Home() {
     const assessmentData = {
       title,
       questions,
-      id: editingAssessmentId
+      id: editingAssessmentId,
+      status: "Draft"
     };
 
 
@@ -218,8 +236,8 @@ export default function Home() {
 
       setSaving(true);
 
-      await fetch(
-        "http://127.0.0.1:8000/assessment/create",
+      const response = await fetch(
+        "http://localhost:8000/assessment/create",
         {
           method: "POST",
           headers: {
@@ -229,11 +247,18 @@ export default function Home() {
         }
       );
 
+      if (!response.ok) {
+
+        throw new Error("Failed to save");
+      }
+
       toast.success("Assessment saved successfully");
 
       setEditingAssessmentId(null);
 
       fetchAssessments();
+
+      setActiveSection("Drafts");
 
     } catch (error) {
 
@@ -248,6 +273,91 @@ export default function Home() {
   };
 
 
+  // PUBLISH ASSESSMENT
+  const publishAssessment = async () => {
+
+    if (!title.trim()) {
+
+      toast.error("Assessment title is required");
+
+      return;
+    }
+
+
+    try {
+
+      setSaving(true);
+
+      const response = await fetch(
+        "http://localhost:8000/assessment/create",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            title,
+            questions,
+            id: editingAssessmentId,
+            status: "Published"
+          })
+        }
+      );
+
+      if (!response.ok) {
+
+        throw new Error();
+      }
+
+      toast.success(
+        "Assessment published successfully"
+      );
+
+      fetchAssessments();
+
+      setActiveSection("Published");
+
+    } catch (error) {
+
+      console.error(error);
+
+      toast.error(
+        "Failed to publish assessment"
+      );
+
+    } finally {
+
+      setSaving(false);
+    }
+  };
+
+
+  // LOADING SCREEN
+  if (checkingAuth) {
+
+    return (
+
+      <div className="min-h-screen flex items-center justify-center bg-slate-100">
+
+        <div className="text-center">
+
+          <div className="w-14 h-14 border-4 border-slate-300 border-t-slate-900 rounded-full animate-spin mx-auto mb-6"></div>
+
+          <h2 className="text-2xl font-bold text-slate-900">
+            Loading AssessPro
+          </h2>
+
+          <p className="text-slate-500 mt-2">
+            Verifying authentication session...
+          </p>
+
+        </div>
+
+      </div>
+    );
+  }
+
+
   return (
 
     <div className="min-h-screen bg-gradient-to-br from-slate-100 via-slate-50 to-slate-200 text-gray-900 flex">
@@ -256,6 +366,8 @@ export default function Home() {
       <Sidebar
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
+        activeSection={activeSection}
+        setActiveSection={setActiveSection}
       />
 
 
@@ -268,6 +380,7 @@ export default function Home() {
         {/* NAVBAR */}
         <Navbar
           saveAssessment={saveAssessment}
+          publishAssessment={publishAssessment}
           showPreview={showPreview}
           setShowPreview={setShowPreview}
           createNewAssessment={createNewAssessment}
@@ -278,207 +391,69 @@ export default function Home() {
         {/* PAGE CONTENT */}
         <div className="px-10 py-10">
 
-          {/* STATS */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+          {/* DASHBOARD */}
+          {activeSection === "Dashboard" && (
 
-            <div className="bg-white/90 backdrop-blur-sm rounded-[30px] p-7 border border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-lg transition">
+            <div>
 
-              <div className="mb-6">
+              {/* STATS */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-                <p className="text-slate-500 text-sm mb-2">
-                  Total Assessments
-                </p>
+                <div className="bg-white rounded-[30px] p-7 border border-slate-200 shadow-sm">
 
-                <h2 className="text-5xl font-bold text-slate-900">
-                  {savedAssessments.length}
-                </h2>
+                  <p className="text-slate-500 text-sm mb-2">
+                    Total Assessments
+                  </p>
 
-              </div>
+                  <h2 className="text-5xl font-bold text-slate-900">
+                    {savedAssessments.length}
+                  </h2>
 
-              <p className="text-sm text-slate-500">
-                Assessments created by faculty
-              </p>
-
-            </div>
+                </div>
 
 
-            <div className="bg-white/90 backdrop-blur-sm rounded-[30px] p-7 border border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-lg transition">
+                <div className="bg-white rounded-[30px] p-7 border border-slate-200 shadow-sm">
 
-              <div className="mb-6">
+                  <p className="text-slate-500 text-sm mb-2">
+                    Draft Assessments
+                  </p>
 
-                <p className="text-slate-500 text-sm mb-2">
-                  Total Questions
-                </p>
+                  <h2 className="text-5xl font-bold text-slate-900">
+                    {
+                      savedAssessments.filter(
+                        (a) => a.status === "Draft"
+                      ).length
+                    }
+                  </h2>
 
-                <h2 className="text-5xl font-bold text-slate-900">
-                  {questions.length}
-                </h2>
-
-              </div>
-
-              <p className="text-sm text-slate-500">
-                Questions in current assessment
-              </p>
-
-            </div>
+                </div>
 
 
-            <div className="bg-white/90 backdrop-blur-sm rounded-[30px] p-7 border border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-lg transition">
+                <div className="bg-white rounded-[30px] p-7 border border-slate-200 shadow-sm">
 
-              <div className="mb-6">
+                  <p className="text-slate-500 text-sm mb-2">
+                    Published Assessments
+                  </p>
 
-                <p className="text-slate-500 text-sm mb-2">
-                  Current Status
-                </p>
+                  <h2 className="text-5xl font-bold text-slate-900">
+                    {
+                      savedAssessments.filter(
+                        (a) => a.status === "Published"
+                      ).length
+                    }
+                  </h2>
 
-                <h2 className="text-2xl font-bold text-slate-900">
-
-                  {editingAssessmentId
-                    ? "Editing Draft"
-                    : "Draft Mode"}
-
-                </h2>
+                </div>
 
               </div>
 
-              <p className="text-sm text-slate-500">
-                Assessment workflow status
-              </p>
 
-            </div>
+              {/* RECENT ACTIVITY */}
+              <div className="mt-10">
 
-          </div>
-
-
-          {/* BUILDER */}
-          <div className="bg-white/90 backdrop-blur-sm rounded-[30px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-200 p-10 mb-12">
-
-            <div className="mb-10">
-
-              <h2 className="text-4xl font-bold tracking-tight text-slate-900">
-
-                {editingAssessmentId
-                  ? "Edit Assessment"
-                  : "Create Assessment"}
-
-              </h2>
-
-              <p className="text-slate-500 mt-3 text-lg">
-                Build professional assessments for students
-              </p>
-
-            </div>
-
-
-            {/* TITLE */}
-            <div className="mb-10">
-
-              <label className="block text-sm font-semibold text-slate-600 mb-4">
-                Assessment Title
-              </label>
-
-              <input
-                type="text"
-                placeholder="Enter assessment title"
-                className="w-full border border-slate-200 bg-slate-50 p-5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-
-            </div>
-
-
-            {/* QUESTION CARDS */}
-            {questions.length > 0 ? (
-
-              <div className="space-y-8">
-
-                {questions.map((q, index) => (
-
-                  <QuestionCard
-                    key={index}
-                    q={q}
-                    index={index}
-                    addQuestionCard={addQuestionCard}
-                    deleteQuestion={deleteQuestion}
-                    updateQuestion={updateQuestion}
-                  />
-
-                ))}
-
-              </div>
-
-            ) : (
-
-              <div className="border-2 border-dashed border-slate-300 rounded-[30px] p-16 flex flex-col items-center justify-center text-center bg-slate-50">
-
-                <h2 className="text-3xl font-bold mb-3 text-slate-900">
-                  No Questions Added
-                </h2>
-
-                <p className="text-slate-500 text-lg mb-8 max-w-md">
-                  Start building your assessment by adding your first question card.
-                </p>
-
-                <button
-                  onClick={addQuestionCard}
-                  className="bg-slate-900 hover:bg-slate-700 transition text-white px-7 py-3 rounded-xl font-semibold text-sm shadow-sm"
-                >
-                  Add First Question
-                </button>
-
-              </div>
-
-            )}
-
-          </div>
-
-
-          {/* PREVIEW */}
-          {showPreview && (
-
-            <div className="bg-white/90 backdrop-blur-sm rounded-[30px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-200 p-10 mb-12">
-
-              <h2 className="text-4xl font-bold mb-10 text-slate-900">
-                Student Preview
-              </h2>
-
-              <h3 className="text-2xl font-semibold mb-10">
-                {title}
-              </h3>
-
-              <div className="space-y-6">
-
-                {questions.map((q, index) => (
-
-                  <div
-                    key={index}
-                    className="border border-slate-200 rounded-3xl p-7 bg-white"
-                  >
-
-                    <h4 className="font-semibold text-xl mb-4">
-                      Question {index + 1}
-                    </h4>
-
-                    <p className="mb-6 text-slate-700">
-                      {q.question}
-                    </p>
-
-                    <div className="flex gap-6 text-sm text-slate-500">
-
-                      <p>
-                        Marks: {q.marks}
-                      </p>
-
-                      <p>
-                        Length: {q.expected_length}
-                      </p>
-
-                    </div>
-
-                  </div>
-
-                ))}
+                <RecentActivity
+                  savedAssessments={savedAssessments}
+                />
 
               </div>
 
@@ -487,93 +462,220 @@ export default function Home() {
           )}
 
 
-          {/* DRAFTS */}
-          <div>
+          {/* CREATE ASSESSMENT */}
+          {activeSection === "Create Assessment" && (
+
+            <div className="space-y-10">
+
+              {/* BUILDER */}
+              <div className="bg-white rounded-[30px] border border-slate-200 p-10 mb-12 shadow-sm">
+
+                <div className="mb-10">
+
+                  <h2 className="text-4xl font-bold text-slate-900">
+
+                    {editingAssessmentId
+                      ? "Edit Assessment"
+                      : "Create Assessment"}
+
+                  </h2>
+
+                  <p className="text-slate-500 mt-3 text-lg">
+                    Build professional assessments for students
+                  </p>
+
+                </div>
+
+
+                {/* TITLE */}
+                <div className="mb-10">
+
+                  <label className="block text-sm font-semibold text-slate-600 mb-4">
+                    Assessment Title
+                  </label>
+
+                  <input
+                    type="text"
+                    placeholder="Enter assessment title"
+                    className="w-full border border-slate-200 bg-slate-50 p-5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                  />
+
+                </div>
+
+
+                {/* QUESTIONS */}
+                <div className="space-y-8">
+
+                  {questions.map((q, index) => (
+
+                    <QuestionCard
+                      key={index}
+                      q={q}
+                      index={index}
+                      addQuestionCard={addQuestionCard}
+                      deleteQuestion={deleteQuestion}
+                      updateQuestion={updateQuestion}
+                    />
+
+                  ))}
+
+                </div>
+
+              </div>
+
+
+              {/* PREVIEW PANEL */}
+              {showPreview && (
+
+                <PreviewPanel
+                  title={title}
+                  questions={questions}
+                />
+
+              )}
+
+            </div>
+
+          )}
+
+
+          {/* SEARCH BAR */}
+          {(activeSection === "Drafts" ||
+            activeSection === "Published") && (
 
             <div className="mb-8">
 
-              <h2 className="text-4xl font-bold text-slate-900">
-                Draft Assessments
-              </h2>
-
-              <p className="text-slate-500 mt-2 text-lg">
-                Continue editing previously saved drafts
-              </p>
-
-            </div>
-
-
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-7">
-
-              {savedAssessments.map((assessment, index) => (
-
-                <AssessmentCard
-                  key={index}
-                  assessment={assessment}
-
-                  onEdit={() => {
-
-                    setTitle(assessment.title);
-
-                    setQuestions(
-                      assessment.questions || [
-                        {
-                          question: "",
-                          answer_key: "",
-                          rubric: "",
-                          marks: "",
-                          expected_length: ""
-                        }
-                      ]
-                    );
-
-                    setEditingAssessmentId(
-                      assessment._id
-                    );
-
-                    window.scrollTo({
-                      top: 0,
-                      behavior: "smooth"
-                    });
-
-                  }}
-
-                  onDelete={async () => {
-
-                    const confirmDelete = confirm(
-                      "Delete this assessment?"
-                    );
-
-                    if (!confirmDelete) return;
-
-                    try {
-
-                      await fetch(
-                        `http://127.0.0.1:8000/assessment/delete/${assessment._id}`,
-                        {
-                          method: "DELETE"
-                        }
-                      );
-
-                      fetchAssessments();
-
-                      toast.success("Assessment deleted");
-
-                    } catch (error) {
-
-                      console.error(error);
-
-                      toast.error("Failed to delete assessment");
-                    }
-
-                  }}
-                />
-
-              ))}
+              <input
+                type="text"
+                placeholder="Search assessments..."
+                value={searchTerm}
+                onChange={(e) =>
+                  setSearchTerm(e.target.value)
+                }
+                className="w-full md:w-[400px] border border-slate-200 bg-white p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition shadow-sm"
+              />
 
             </div>
 
-          </div>
+          )}
+
+
+          {/* DRAFTS */}
+          {activeSection === "Drafts" && (
+
+            <div>
+
+              <div className="mb-8">
+
+                <h2 className="text-4xl font-bold text-slate-900 mb-3">
+                  Draft Assessments
+                </h2>
+
+                <p className="text-slate-500 text-lg">
+                  Continue editing previously saved drafts
+                </p>
+
+              </div>
+
+
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+
+                {savedAssessments
+                  .filter(
+                    (assessment) =>
+                      assessment.status === "Draft" &&
+                      assessment.title
+                        .toLowerCase()
+                        .includes(
+                          searchTerm.toLowerCase()
+                        )
+                  )
+                  .map((assessment) => (
+
+                    <AssessmentCard
+                      key={assessment._id}
+                      assessment={assessment}
+                      fetchAssessments={fetchAssessments}
+                      setTitle={setTitle}
+                      setQuestions={setQuestions}
+                      setEditingAssessmentId={setEditingAssessmentId}
+                      setActiveSection={setActiveSection}
+                    />
+
+                  ))}
+
+              </div>
+
+            </div>
+
+          )}
+
+
+          {/* PUBLISHED */}
+          {activeSection === "Published" && (
+
+            <div>
+
+              <div className="mb-8">
+
+                <h2 className="text-4xl font-bold text-slate-900 mb-3">
+                  Published Assessments
+                </h2>
+
+                <p className="text-slate-500 text-lg">
+                  Live assessments available for students
+                </p>
+
+              </div>
+
+
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+
+                {savedAssessments
+                  .filter(
+                    (assessment) =>
+                      assessment.status === "Published" &&
+                      assessment.title
+                        .toLowerCase()
+                        .includes(
+                          searchTerm.toLowerCase()
+                        )
+                  )
+                  .map((assessment) => (
+
+                    <AssessmentCard
+                      key={assessment._id}
+                      assessment={assessment}
+                      fetchAssessments={fetchAssessments}
+                      setTitle={setTitle}
+                      setQuestions={setQuestions}
+                      setEditingAssessmentId={setEditingAssessmentId}
+                      setActiveSection={setActiveSection}
+                    />
+
+                  ))}
+
+              </div>
+
+            </div>
+
+          )}
+
+
+          {/* ANALYTICS */}
+          {activeSection === "Analytics" && (
+
+            <div className="space-y-8">
+
+              <AnalyticsChart
+                savedAssessments={savedAssessments}
+              />
+
+            </div>
+
+          )}
 
         </div>
 

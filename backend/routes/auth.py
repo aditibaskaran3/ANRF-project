@@ -1,14 +1,19 @@
 from fastapi import APIRouter, HTTPException
+
 from jose import jwt
+
 from passlib.context import CryptContext
+
 from datetime import datetime, timedelta
 
 from database import db
+
 from models.user_model import User
 
 router = APIRouter()
 
 SECRET_KEY = "MYSECRETKEY"
+
 ALGORITHM = "HS256"
 
 pwd_context = CryptContext(

@@ -1,87 +1,165 @@
+"use client";
+
+import toast from "react-hot-toast";
+
 export default function AssessmentCard({
   assessment,
-  onEdit,
-  onDelete
+  fetchAssessments,
+  setTitle,
+  setQuestions,
+  setEditingAssessmentId,
+  setActiveSection
 }) {
+
+  // LOAD DRAFT
+  const continueEditing = () => {
+
+    setTitle(
+      assessment.title
+    );
+
+    setQuestions(
+      assessment.questions
+    );
+
+    setEditingAssessmentId(
+      assessment._id
+    );
+
+    // IMPORTANT
+    setActiveSection(
+      "Create Assessment"
+    );
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+
+    toast.success(
+      "Draft loaded successfully"
+    );
+  };
+
+
+  // DELETE
+  const deleteAssessment = async () => {
+
+    const confirmDelete = confirm(
+      "Delete this assessment?"
+    );
+
+    if (!confirmDelete) return;
+
+
+    try {
+
+      const response = await fetch(
+        `http://localhost:8000/assessment/delete/${assessment._id}`,
+        {
+          method: "DELETE"
+        }
+      );
+
+      if (!response.ok) {
+
+        throw new Error();
+      }
+
+      toast.success(
+        "Assessment deleted"
+      );
+
+      fetchAssessments();
+
+    } catch (error) {
+
+      console.error(error);
+
+      toast.error(
+        "Failed to delete"
+      );
+    }
+  };
+
 
   return (
 
-    <div className="bg-white rounded-[28px] p-7 border border-slate-200 hover:shadow-lg hover:-translate-y-1 transition duration-300 group">
+    <div className="bg-white rounded-[30px] border border-slate-200 p-8 shadow-sm hover:shadow-md transition">
 
-      {/* TOP */}
-      <div className="flex items-start justify-between mb-6">
+      {/* HEADER */}
+      <div className="mb-6">
 
-        <div>
+        <div className="flex items-center justify-between mb-5">
 
-          <div className="flex items-center gap-3 mb-3">
+          <div className="flex items-center gap-2">
 
-            <div className="w-3 h-3 rounded-full bg-sky-600" />
+            <div className="w-3 h-3 rounded-full bg-slate-500"></div>
 
-            <span className="text-sm font-semibold text-sky-600">
-              Draft Assessment
-            </span>
+            <p className="text-sm font-semibold text-slate-600">
+              {assessment.status}
+            </p>
 
           </div>
 
 
-          <h2 className="text-2xl font-bold text-slate-900 leading-tight">
+          <span className={`text-xs px-3 py-1 rounded-full font-medium
 
-            {assessment.title}
-
-          </h2>
+            ${assessment.status === "Published"
+              ? "bg-green-100 text-green-700"
+              : "bg-slate-100 text-slate-700"}
+          `}
+          >
+            {assessment.status}
+          </span>
 
         </div>
 
 
-        {/* DELETE */}
-        <button
-          onClick={onDelete}
-          className="w-10 h-10 rounded-xl border border-slate-200 bg-white hover:bg-red-50 hover:border-red-300 transition flex items-center justify-center opacity-0 group-hover:opacity-100 text-sm"
-        >
-          ×
-        </button>
+        <h2 className="text-3xl font-bold text-slate-900 leading-tight">
+          {assessment.title}
+        </h2>
 
       </div>
 
 
       {/* DETAILS */}
-      <div className="space-y-4 mb-7">
+      <div className="space-y-4 mb-8">
 
-        <div className="flex items-center justify-between text-sm">
+        <div className="flex justify-between items-center">
 
-          <span className="text-slate-500">
+          <p className="text-slate-500">
             Questions
-          </span>
+          </p>
 
-          <span className="font-semibold text-slate-800">
-            {assessment.questions?.length || 0}
-          </span>
-
-        </div>
-
-
-        <div className="flex items-center justify-between text-sm">
-
-          <span className="text-slate-500">
-            Status
-          </span>
-
-          <span className="bg-sky-100 text-sky-700 px-3 py-1 rounded-full font-medium text-xs">
-            Draft
-          </span>
+          <p className="font-bold text-slate-900">
+            {assessment.questions.length}
+          </p>
 
         </div>
 
       </div>
 
 
-      {/* ACTION */}
-      <button
-        onClick={onEdit}
-        className="w-full bg-slate-900 hover:bg-sky-600 transition text-white py-3 rounded-xl font-semibold text-sm"
-      >
-        Continue Editing
-      </button>
+      {/* ACTIONS */}
+      <div className="flex gap-3">
+
+        <button
+          onClick={continueEditing}
+          className="flex-1 bg-slate-900 hover:bg-slate-700 transition text-white py-3 rounded-xl font-semibold text-sm"
+        >
+          Continue Editing
+        </button>
+
+
+        <button
+          onClick={deleteAssessment}
+          className="px-5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-xl font-semibold text-sm transition"
+        >
+          Delete
+        </button>
+
+      </div>
 
     </div>
   );

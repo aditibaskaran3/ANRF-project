@@ -1,39 +1,79 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+import { useRouter } from "next/navigation";
+
 export default function Navbar({
   saveAssessment,
+  publishAssessment,
   showPreview,
   setShowPreview,
-  createNewAssessment
+  createNewAssessment,
+  saving
 }) {
+
+  const router = useRouter();
+
+  const [facultyEmail, setFacultyEmail] = useState("");
+
+
+  useEffect(() => {
+
+    const email = localStorage.getItem(
+      "facultyEmail"
+    );
+
+    if (email) {
+
+      setFacultyEmail(email);
+    }
+
+  }, []);
+
+
+  // LOGOUT
+  const logoutUser = () => {
+
+    localStorage.removeItem("token");
+
+    localStorage.removeItem("facultyEmail");
+
+    router.push("/login");
+  };
+
 
   return (
 
-    <div className="sticky top-0 z-30 backdrop-blur-xl bg-white/80 border-b border-slate-200 px-8 py-4 flex items-center justify-between">
+    <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 px-8 py-5 flex items-center justify-between">
 
       {/* LEFT */}
       <div>
 
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-          Faculty Dashboard
+        <h1 className="text-2xl font-bold text-slate-900">
+          AssessPro
         </h1>
 
-        <p className="text-slate-500 mt-1 text-sm">
-          Manage assessments and drafts
+        <p className="text-slate-500 text-sm mt-1">
+          Academic Evaluation Platform
         </p>
 
       </div>
 
 
       {/* RIGHT */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
 
-        {/* SEARCH */}
-        <div className="hidden lg:flex items-center bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 w-[220px]">
+        {/* EMAIL */}
+        <div className="hidden md:flex flex-col items-end mr-3">
 
-          <input
-            type="text"
-            placeholder="Search..."
-            className="bg-transparent outline-none w-full text-sm"
-          />
+          <p className="text-sm font-semibold text-slate-800">
+            Faculty Logged In
+          </p>
+
+          <p className="text-xs text-slate-500">
+            {facultyEmail}
+          </p>
 
         </div>
 
@@ -41,7 +81,7 @@ export default function Navbar({
         {/* NEW */}
         <button
           onClick={createNewAssessment}
-          className="bg-white border border-slate-200 hover:border-sky-300 hover:bg-sky-50 transition px-4 py-2 rounded-xl font-medium text-sm"
+          className="bg-slate-200 hover:bg-slate-300 transition text-slate-800 px-5 py-2 rounded-xl font-semibold text-sm"
         >
           New
         </button>
@@ -49,28 +89,52 @@ export default function Navbar({
 
         {/* PREVIEW */}
         <button
-          onClick={() => setShowPreview(!showPreview)}
-          className="bg-white border border-slate-200 hover:border-sky-300 hover:bg-sky-50 transition px-4 py-2 rounded-xl font-medium text-sm"
+          onClick={() =>
+            setShowPreview(!showPreview)
+          }
+          className="bg-slate-200 hover:bg-slate-300 transition text-slate-800 px-5 py-2 rounded-xl font-semibold text-sm"
         >
-          Preview
+
+          {showPreview
+            ? "Hide Preview"
+            : "Preview"}
+
         </button>
 
 
         {/* SAVE */}
         <button
           onClick={saveAssessment}
-          className="bg-sky-600 hover:bg-sky-700 transition text-white px-5 py-2 rounded-xl font-semibold text-sm shadow-sm"
+          disabled={saving}
+          className="bg-slate-900 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition text-white px-5 py-2 rounded-xl font-semibold text-sm shadow-sm"
         >
-          Save
+
+          {saving
+            ? "Saving..."
+            : "Save Draft"}
+
         </button>
 
 
-        {/* PROFILE */}
-        <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-sm">
+        {/* PUBLISH */}
+        <button
+          onClick={publishAssessment}
+          disabled={saving}
+          className="bg-sky-600 hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed transition text-white px-5 py-2 rounded-xl font-semibold text-sm shadow-sm"
+        >
 
-          F
+          Publish
 
-        </div>
+        </button>
+
+
+        {/* LOGOUT */}
+        <button
+          onClick={logoutUser}
+          className="bg-red-50 hover:bg-red-100 border border-red-200 transition text-red-600 px-4 py-2 rounded-xl font-medium text-sm"
+        >
+          Logout
+        </button>
 
       </div>
 
