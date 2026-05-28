@@ -107,10 +107,9 @@ export default function QuestionCard({
             Rubric
           </label>
 
-          <input
-            type="text"
-            placeholder="Evaluation criteria"
-            className="w-full border border-slate-200 bg-white rounded-2xl p-5 focus:outline-none focus:ring-2 focus:ring-slate-400 transition"
+          <textarea
+            placeholder="Enter evaluation criteria..."
+            className="w-full border border-slate-200 bg-white rounded-2xl p-5 min-h-[140px] focus:outline-none focus:ring-2 focus:ring-slate-400 transition resize-none"
             value={q.rubric || ""}
             onChange={(e) =>
               updateQuestion(index, "rubric", e.target.value)

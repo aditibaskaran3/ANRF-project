@@ -26,6 +26,23 @@ def home():
     }
 
 
+# TEST APIs
+@app.get("/assessment/drafts")
+def drafts():
+
+    return {
+        "message": "Draft Assessments API Working"
+    }
+
+
+@app.get("/assessment/published")
+def published():
+
+    return {
+        "message": "Published Assessments API Working"
+    }
+
+
 # ASSESSMENT ROUTES
 app.include_router(
     assessment_router,
