@@ -84,4 +84,4 @@ export default function RecentActivity({
 
     </div>
   );
-}c
+}

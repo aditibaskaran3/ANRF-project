@@ -17,7 +17,7 @@ export default function PreviewPanel({
         </h1>
 
         <p className="text-slate-500 text-lg">
-          Faculty Assessment Preview
+          Student Assessment Preview
         </p>
 
       </div>
@@ -36,65 +36,41 @@ export default function PreviewPanel({
             {/* QUESTION */}
             <div className="mb-6">
 
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-4">
 
                 <h2 className="text-2xl font-bold text-slate-900">
                   Question {index + 1}
                 </h2>
 
-                <div className="bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-semibold">
+                <div className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-semibold">
                   {q.marks || 0} Marks
                 </div>
 
               </div>
 
-              <p className="text-slate-700 text-lg leading-relaxed">
-                {q.question || "No question added"}
-              </p>
+              <div className="bg-white rounded-2xl p-6 border border-slate-200">
+
+                <p className="text-slate-800 text-lg leading-relaxed">
+                  {q.question || "No question added"}
+                </p>
+
+              </div>
 
             </div>
 
 
-            {/* DETAILS */}
-            <div className="grid md:grid-cols-2 gap-5">
+            {/* STUDENT ANSWER BOX */}
+            <div>
 
-              <div className="bg-white rounded-xl p-5 border border-slate-200">
+              <label className="block text-lg font-semibold text-slate-700 mb-3">
+                Your Answer
+              </label>
 
-                <h3 className="font-semibold text-slate-900 mb-2">
-                  Expected Answer
-                </h3>
-
-                <p className="text-slate-600">
-                  {q.answer_key || "Not added"}
-                </p>
-
-              </div>
-
-
-              <div className="bg-white rounded-xl p-5 border border-slate-200">
-
-                <h3 className="font-semibold text-slate-900 mb-2">
-                  Rubric
-                </h3>
-
-                <p className="text-slate-600">
-                  {q.rubric || "Not added"}
-                </p>
-
-              </div>
-
-
-              <div className="bg-white rounded-xl p-5 border border-slate-200 md:col-span-2">
-
-                <h3 className="font-semibold text-slate-900 mb-2">
-                  Expected Length
-                </h3>
-
-                <p className="text-slate-600">
-                  {q.expected_length || "Not specified"}
-                </p>
-
-              </div>
+              <textarea
+                rows={6}
+                placeholder="Write your answer here..."
+                className="w-full border border-slate-300 rounded-2xl p-5 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-white"
+              />
 
             </div>
 

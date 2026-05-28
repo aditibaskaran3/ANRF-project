@@ -1,48 +1,38 @@
 "use client";
 
 import { useState, useEffect } from "react";
-
 import { useRouter } from "next/navigation";
-
 import toast from "react-hot-toast";
+import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
-
   const router = useRouter();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const [showPassword, setShowPassword] =
+    useState(false);
+
   const [loading, setLoading] = useState(false);
 
-
-  // CHECK EXISTING LOGIN
   useEffect(() => {
-
     const token = localStorage.getItem("token");
 
     if (token) {
-
       router.push("/");
     }
-
   }, []);
 
-
   const loginUser = async (e) => {
-
     e.preventDefault();
 
     if (!email || !password) {
-
       toast.error("Please fill all fields");
-
       return;
     }
 
-
     try {
-
       setLoading(true);
 
       const response = await fetch(
@@ -50,33 +40,27 @@ export default function LoginPage() {
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             email,
-            password
-          })
+            password,
+          }),
         }
       );
 
       const data = await response.json();
 
-
       if (!response.ok) {
-
-        toast.error(data.detail);
-
+        toast.error(data.detail || "Login failed");
         return;
       }
 
-
-      // STORE TOKEN
       localStorage.setItem(
         "token",
         data.access_token
       );
 
-      // STORE EMAIL
       localStorage.setItem(
         "facultyEmail",
         email
@@ -85,118 +69,131 @@ export default function LoginPage() {
       toast.success("Login successful");
 
       router.push("/");
-
     } catch (error) {
-
       console.error(error);
-
       toast.error("Login failed");
-
     } finally {
-
       setLoading(false);
     }
   };
 
-
   return (
+    <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-100 via-slate-50 to-slate-200 flex items-center justify-center px-4">
 
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-slate-50 to-slate-200 flex items-center justify-center px-6">
-
-      <div className="w-full max-w-md bg-white border border-slate-200 rounded-[30px] p-10 shadow-lg">
+      <div className="w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-slate-200 p-8">
 
         {/* HEADER */}
-        <div className="mb-10 text-center">
+        <div className="text-center mb-6">
 
-          <h1 className="text-5xl font-bold text-slate-900 mb-3">
-            AssessPro
+          <div className="text-6xl mb-3">
+            🔐
+          </div>
+
+          <h1 className="text-4xl font-bold text-slate-900">
+            Welcome Back
           </h1>
 
-          <p className="text-slate-500 text-lg">
-            Faculty Authentication Portal
+          <p className="text-slate-500 mt-2">
+            Sign in to continue to AssessPro
           </p>
-
         </div>
-
 
         {/* FORM */}
         <form
           onSubmit={loginUser}
-          className="space-y-6"
+          className="space-y-4"
         >
 
           {/* EMAIL */}
           <div>
-
-            <label className="block text-sm font-semibold text-slate-700 mb-3">
+            <label className="block font-semibold text-slate-700 mb-1">
               Email Address
             </label>
 
-            <input
-              type="email"
-              placeholder="admin@gmail.com"
-              className="w-full border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 p-5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition"
-              value={email}
-              onChange={(e) =>
-                setEmail(e.target.value)
-              }
-            />
+            <div className="relative">
+              <Mail
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
+                size={18}
+              />
 
+              <input
+                type="email"
+                placeholder="Enter your email"
+                className="w-full border border-slate-300 py-3 pl-11 pr-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-black placeholder:text-slate-500"
+                value={email}
+                onChange={(e) =>
+                  setEmail(e.target.value)
+                }
+              />
+            </div>
           </div>
-
 
           {/* PASSWORD */}
           <div>
-
-            <label className="block text-sm font-semibold text-slate-700 mb-3">
+            <label className="block font-semibold text-slate-700 mb-1">
               Password
             </label>
 
-            <input
-              type="password"
-              placeholder="Enter password"
-              className="w-full border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 p-5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition"
-              value={password}
-              onChange={(e) =>
-                setPassword(e.target.value)
-              }
-            />
+            <div className="relative">
+              <Lock
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
+                size={18}
+              />
 
+              <input
+                type={
+                  showPassword ? "text" : "password"
+                }
+                placeholder="Enter password"
+                className="w-full border border-slate-300 py-3 pl-11 pr-11 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-black placeholder:text-slate-500"
+                value={password}
+                onChange={(e) =>
+                  setPassword(e.target.value)
+                }
+              />
+
+              <button
+                type="button"
+                onClick={() =>
+                  setShowPassword(!showPassword)
+                }
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500"
+              >
+                {showPassword ? (
+                  <EyeOff size={18} />
+                ) : (
+                  <Eye size={18} />
+                )}
+              </button>
+            </div>
           </div>
 
-
-          {/* BUTTON */}
+          {/* LOGIN BUTTON */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-slate-900 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition text-white py-4 rounded-2xl font-semibold text-lg"
+            className="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white py-3 rounded-xl text-lg font-semibold shadow-lg hover:opacity-90 transition-all"
           >
-
             {loading
               ? "Signing In..."
               : "Sign In"}
-
           </button>
 
-
-          {/* REGISTER LINK */}
-          <p className="text-center text-slate-500 mt-6">
-
-            Don't have an account?
+          {/* REGISTER */}
+          <p className="text-center text-slate-600 text-sm">
+            Don&apos;t have an account?
 
             <span
-              onClick={() => router.push("/register")}
-              className="text-slate-900 font-semibold cursor-pointer ml-2 hover:underline"
+              onClick={() =>
+                router.push("/register")
+              }
+              className="text-blue-600 font-semibold cursor-pointer ml-2 hover:underline"
             >
               Create Account
             </span>
-
           </p>
-
         </form>
-
       </div>
-
     </div>
   );
 }
