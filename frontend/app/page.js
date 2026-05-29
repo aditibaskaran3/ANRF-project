@@ -140,7 +140,14 @@ export default function Home() {
 
       const data = await response.json();
 
-      setSavedAssessments(data);
+      // SORT NEWEST FIRST — MongoDB _id is timestamp-based
+      const sorted = [...data].sort((a, b) => {
+        if (a._id < b._id) return 1;
+        if (a._id > b._id) return -1;
+        return 0;
+      });
+
+      setSavedAssessments(sorted);
 
     } catch (error) {
 
@@ -730,7 +737,6 @@ export default function Home() {
                       setQuestions={setQuestions}
                       setEditingAssessmentId={setEditingAssessmentId}
                       setActiveSection={setActiveSection}
-                      // Pass new field setters so edit flow loads them
                       setSubjectCode={setSubjectCode}
                       setSubjectName={setSubjectName}
                       setExamDate={setExamDate}
@@ -787,7 +793,6 @@ export default function Home() {
                       setQuestions={setQuestions}
                       setEditingAssessmentId={setEditingAssessmentId}
                       setActiveSection={setActiveSection}
-                      // Pass new field setters so edit flow loads them
                       setSubjectCode={setSubjectCode}
                       setSubjectName={setSubjectName}
                       setExamDate={setExamDate}
