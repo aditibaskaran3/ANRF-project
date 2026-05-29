@@ -2,6 +2,11 @@
 
 export default function PreviewPanel({
   title,
+  subjectCode,
+  subjectName,
+  examDate,
+  duration,
+  instructions,
   questions
 }) {
 
@@ -23,7 +28,59 @@ export default function PreviewPanel({
       </div>
 
 
-      {/* QUESTIONS */}
+      {/* EXAM DETAILS */}
+      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 mb-8">
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          <p>
+            <span className="font-semibold">
+              Subject Code:
+            </span>{" "}
+            {subjectCode || "-"}
+          </p>
+
+          <p>
+            <span className="font-semibold">
+              Subject Name:
+            </span>{" "}
+            {subjectName || "-"}
+          </p>
+
+          <p>
+            <span className="font-semibold">
+              Examination Date:
+            </span>{" "}
+            {examDate || "-"}
+          </p>
+
+          <p>
+            <span className="font-semibold">
+              Duration:
+            </span>{" "}
+            {duration || "-"}
+          </p>
+
+        </div>
+
+      </div>
+
+
+      {/* INSTRUCTIONS */}
+      <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6 mb-10">
+
+        <h2 className="text-xl font-bold text-slate-900 mb-4">
+          Instructions
+        </h2>
+
+        <p className="text-slate-700 whitespace-pre-line">
+          {instructions || "No instructions provided."}
+        </p>
+
+      </div>
+
+
+      {/* QUESTIONS — Answer Key, Rubric, Expected Length intentionally hidden */}
       <div className="space-y-8">
 
         {questions.map((q, index) => (

@@ -26,6 +26,13 @@ export default function Home() {
 
   const [title, setTitle] = useState("");
 
+  // NEW EXAM METADATA FIELDS
+  const [subjectCode, setSubjectCode] = useState("");
+  const [subjectName, setSubjectName] = useState("");
+  const [examDate, setExamDate] = useState("");
+  const [duration, setDuration] = useState("");
+  const [instructions, setInstructions] = useState("");
+
   const [showPreview, setShowPreview] = useState(false);
 
   const [savedAssessments, setSavedAssessments] = useState([]);
@@ -74,6 +81,11 @@ export default function Home() {
       const parsedDraft = JSON.parse(savedDraft);
 
       setTitle(parsedDraft.title || "");
+      setSubjectCode(parsedDraft.subjectCode || "");
+      setSubjectName(parsedDraft.subjectName || "");
+      setExamDate(parsedDraft.examDate || "");
+      setDuration(parsedDraft.duration || "");
+      setInstructions(parsedDraft.instructions || "");
 
       setQuestions(
         parsedDraft.questions || [
@@ -91,18 +103,23 @@ export default function Home() {
   }, []);
 
 
-  // AUTOSAVE
+  // AUTOSAVE — includes new metadata fields
   useEffect(() => {
 
     localStorage.setItem(
       "assessmentDraft",
       JSON.stringify({
         title,
+        subjectCode,
+        subjectName,
+        examDate,
+        duration,
+        instructions,
         questions
       })
     );
 
-  }, [title, questions]);
+  }, [title, subjectCode, subjectName, examDate, duration, instructions, questions]);
 
 
   // FETCH ASSESSMENTS
@@ -132,11 +149,15 @@ export default function Home() {
   };
 
 
-  // CREATE NEW ASSESSMENT
-  const createNewAssessment = () => {
+  // RESET ALL FIELDS HELPER
+  const resetFields = () => {
 
     setTitle("");
-
+    setSubjectCode("");
+    setSubjectName("");
+    setExamDate("");
+    setDuration("");
+    setInstructions("");
     setQuestions([
       {
         question: "",
@@ -146,8 +167,14 @@ export default function Home() {
         expected_length: ""
       }
     ]);
-
     setEditingAssessmentId(null);
+  };
+
+
+  // CREATE NEW ASSESSMENT
+  const createNewAssessment = () => {
+
+    resetFields();
 
     setActiveSection("Create Assessment");
 
@@ -196,16 +223,27 @@ export default function Home() {
   };
 
 
-  // SAVE ASSESSMENT
-  const saveAssessment = async () => {
+  // BUILD ASSESSMENT PAYLOAD — shared by save and publish
+  const buildPayload = (status) => ({
+    title,
+    subjectCode,
+    subjectName,
+    examDate,
+    duration,
+    instructions,
+    questions,
+    id: editingAssessmentId,
+    status
+  });
+
+
+  // VALIDATE FIELDS
+  const validateFields = () => {
 
     if (!title.trim()) {
-
       toast.error("Assessment title is required");
-
-      return;
+      return false;
     }
-
 
     for (let q of questions) {
 
@@ -216,21 +254,19 @@ export default function Home() {
         !q.marks ||
         !q.expected_length.trim()
       ) {
-
-        toast.error("Please fill all fields");
-
-        return;
+        toast.error("Please fill all question fields");
+        return false;
       }
     }
 
+    return true;
+  };
 
-    const assessmentData = {
-      title,
-      questions,
-      id: editingAssessmentId,
-      status: "Draft"
-    };
 
+  // SAVE ASSESSMENT
+  const saveAssessment = async () => {
+
+    if (!validateFields()) return;
 
     try {
 
@@ -243,7 +279,7 @@ export default function Home() {
           headers: {
             "Content-Type": "application/json"
           },
-          body: JSON.stringify(assessmentData)
+          body: JSON.stringify(buildPayload("Draft"))
         }
       );
 
@@ -283,7 +319,6 @@ export default function Home() {
       return;
     }
 
-
     try {
 
       setSaving(true);
@@ -295,12 +330,7 @@ export default function Home() {
           headers: {
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({
-            title,
-            questions,
-            id: editingAssessmentId,
-            status: "Published"
-          })
+          body: JSON.stringify(buildPayload("Published"))
         }
       );
 
@@ -488,7 +518,7 @@ export default function Home() {
 
 
                 {/* TITLE */}
-                <div className="mb-10">
+                <div className="mb-8">
 
                   <label className="block text-sm font-semibold text-slate-600 mb-4">
                     Assessment Title
@@ -500,6 +530,99 @@ export default function Home() {
                     className="w-full border border-slate-200 bg-slate-50 p-5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
+                  />
+
+                </div>
+
+
+                {/* EXAM METADATA — Subject Code & Subject Name */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+
+                  <div>
+
+                    <label className="block text-sm font-semibold text-slate-600 mb-4">
+                      Subject Code
+                    </label>
+
+                    <input
+                      type="text"
+                      placeholder="e.g. CS301"
+                      className="w-full border border-slate-200 bg-slate-50 p-5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition"
+                      value={subjectCode}
+                      onChange={(e) => setSubjectCode(e.target.value)}
+                    />
+
+                  </div>
+
+                  <div>
+
+                    <label className="block text-sm font-semibold text-slate-600 mb-4">
+                      Subject Name
+                    </label>
+
+                    <input
+                      type="text"
+                      placeholder="e.g. Database Management Systems"
+                      className="w-full border border-slate-200 bg-slate-50 p-5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition"
+                      value={subjectName}
+                      onChange={(e) => setSubjectName(e.target.value)}
+                    />
+
+                  </div>
+
+                </div>
+
+
+                {/* Date of Examination & Total Time */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+
+                  <div>
+
+                    <label className="block text-sm font-semibold text-slate-600 mb-4">
+                      Date of Examination
+                    </label>
+
+                    <input
+                      type="date"
+                      className="w-full border border-slate-200 bg-slate-50 p-5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition text-slate-700"
+                      value={examDate}
+                      onChange={(e) => setExamDate(e.target.value)}
+                    />
+
+                  </div>
+
+                  <div>
+
+                    <label className="block text-sm font-semibold text-slate-600 mb-4">
+                      Total Time
+                    </label>
+
+                    <input
+                      type="text"
+                      placeholder="e.g. 90 Minutes"
+                      className="w-full border border-slate-200 bg-slate-50 p-5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition"
+                      value={duration}
+                      onChange={(e) => setDuration(e.target.value)}
+                    />
+
+                  </div>
+
+                </div>
+
+
+                {/* INSTRUCTIONS */}
+                <div className="mb-10">
+
+                  <label className="block text-sm font-semibold text-slate-600 mb-4">
+                    Exam Instructions
+                  </label>
+
+                  <textarea
+                    rows={5}
+                    placeholder="Enter exam instructions for students (e.g. Answer all questions. Each question carries marks as indicated. No calculators allowed.)"
+                    className="w-full border border-slate-200 bg-slate-50 p-5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition resize-none text-slate-700"
+                    value={instructions}
+                    onChange={(e) => setInstructions(e.target.value)}
                   />
 
                 </div>
@@ -531,6 +654,11 @@ export default function Home() {
 
                 <PreviewPanel
                   title={title}
+                  subjectCode={subjectCode}
+                  subjectName={subjectName}
+                  examDate={examDate}
+                  duration={duration}
+                  instructions={instructions}
                   questions={questions}
                 />
 
@@ -602,6 +730,12 @@ export default function Home() {
                       setQuestions={setQuestions}
                       setEditingAssessmentId={setEditingAssessmentId}
                       setActiveSection={setActiveSection}
+                      // Pass new field setters so edit flow loads them
+                      setSubjectCode={setSubjectCode}
+                      setSubjectName={setSubjectName}
+                      setExamDate={setExamDate}
+                      setDuration={setDuration}
+                      setInstructions={setInstructions}
                     />
 
                   ))}
@@ -653,6 +787,12 @@ export default function Home() {
                       setQuestions={setQuestions}
                       setEditingAssessmentId={setEditingAssessmentId}
                       setActiveSection={setActiveSection}
+                      // Pass new field setters so edit flow loads them
+                      setSubjectCode={setSubjectCode}
+                      setSubjectName={setSubjectName}
+                      setExamDate={setExamDate}
+                      setDuration={setDuration}
+                      setInstructions={setInstructions}
                     />
 
                   ))}
