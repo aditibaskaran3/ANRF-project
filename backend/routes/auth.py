@@ -81,7 +81,8 @@ def register(user: User):
 
     users_collection.insert_one({
         "email": user.email,
-        "password": hashed_password
+        "password": hashed_password,
+        "role": getattr(user, "role", "student")
     })
 
     return {
@@ -122,5 +123,9 @@ def login(user: User):
 
     return {
         "access_token": token,
-        "token_type": "bearer"
+        "token_type": "bearer",
+        "role": existing_user.get(
+            "role",
+            "student"
+        )
     }

@@ -62,17 +62,53 @@ export default function LoginPage() {
       );
 
       localStorage.setItem(
-        "facultyEmail",
+        "userRole",
+        data.role
+      );
+
+      localStorage.setItem(
+        "userEmail",
         email
       );
 
       toast.success("Login successful");
 
-      router.push("/");
+      // ROLE BASED REDIRECTION
+      if (data.role === "student") {
+
+        router.push(
+          "/student/dashboard"
+        );
+
+      } else if (
+        data.role === "faculty"
+      ) {
+
+        router.push(
+          "/"
+        );
+
+      } else if (
+        data.role === "admin"
+      ) {
+
+        router.push(
+          "/admin/dashboard"
+        );
+
+      } else {
+
+        router.push("/");
+      }
+
     } catch (error) {
+
       console.error(error);
+
       toast.error("Login failed");
+
     } finally {
+
       setLoading(false);
     }
   };
@@ -96,6 +132,7 @@ export default function LoginPage() {
           <p className="text-slate-500 mt-2">
             Sign in to continue to AssessPro
           </p>
+
         </div>
 
         {/* FORM */}
@@ -106,11 +143,13 @@ export default function LoginPage() {
 
           {/* EMAIL */}
           <div>
+
             <label className="block font-semibold text-slate-700 mb-1">
               Email Address
             </label>
 
             <div className="relative">
+
               <Mail
                 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
                 size={18}
@@ -125,16 +164,20 @@ export default function LoginPage() {
                   setEmail(e.target.value)
                 }
               />
+
             </div>
+
           </div>
 
           {/* PASSWORD */}
           <div>
+
             <label className="block font-semibold text-slate-700 mb-1">
               Password
             </label>
 
             <div className="relative">
+
               <Lock
                 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
                 size={18}
@@ -142,7 +185,9 @@ export default function LoginPage() {
 
               <input
                 type={
-                  showPassword ? "text" : "password"
+                  showPassword
+                    ? "text"
+                    : "password"
                 }
                 placeholder="Enter password"
                 className="w-full border border-slate-300 py-3 pl-11 pr-11 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-black placeholder:text-slate-500"
@@ -155,7 +200,9 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() =>
-                  setShowPassword(!showPassword)
+                  setShowPassword(
+                    !showPassword
+                  )
                 }
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500"
               >
@@ -165,7 +212,9 @@ export default function LoginPage() {
                   <Eye size={18} />
                 )}
               </button>
+
             </div>
+
           </div>
 
           {/* LOGIN BUTTON */}
@@ -181,6 +230,7 @@ export default function LoginPage() {
 
           {/* REGISTER */}
           <p className="text-center text-slate-600 text-sm">
+
             Don&apos;t have an account?
 
             <span
@@ -191,9 +241,13 @@ export default function LoginPage() {
             >
               Create Account
             </span>
+
           </p>
+
         </form>
+
       </div>
+
     </div>
   );
 }

@@ -133,9 +133,9 @@ export default function Home() {
   const fetchAssessments = async () => {
 
     try {
-
+      const facultyEmail = localStorage.getItem("userEmail");
       const response = await fetch(
-        "http://localhost:8000/assessment/all"
+        `http://localhost:8000/assessment/all/${facultyEmail}`
       );
 
       const data = await response.json();
@@ -240,7 +240,8 @@ export default function Home() {
     instructions,
     questions,
     id: editingAssessmentId,
-    status
+    status,
+    faculty_email: localStorage.getItem("userEmail")
   });
 
 

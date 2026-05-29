@@ -1,11 +1,28 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 export default function Sidebar({
   sidebarOpen,
   setSidebarOpen,
   activeSection,
   setActiveSection
 }) {
+
+  const [userEmail, setUserEmail] = useState("");
+
+  useEffect(() => {
+
+    const email = localStorage.getItem(
+      "userEmail"
+    );
+
+    if (email) {
+
+      setUserEmail(email);
+    }
+
+  }, []);
 
   const menuItems = [
     "Dashboard",
@@ -124,7 +141,9 @@ export default function Sidebar({
           <div className="flex items-center gap-3">
 
             <div className="w-10 h-10 rounded-xl bg-sky-600 flex items-center justify-center font-bold text-sm">
-              F
+              {userEmail
+                ? userEmail[0].toUpperCase()
+                : "F"}
             </div>
 
 
@@ -136,8 +155,8 @@ export default function Sidebar({
                   Faculty
                 </h3>
 
-                <p className="text-xs text-slate-400">
-                  Admin Access
+                <p className="text-xs text-slate-400 break-all">
+                  {userEmail}
                 </p>
 
               </div>

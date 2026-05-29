@@ -41,12 +41,16 @@ def create_assessment(data: dict):
     }
 
 
-# GET ALL ASSESSMENTS
-@router.get("/all")
-def get_all_assessments():
+# GET ASSESSMENTS OF LOGGED-IN FACULTY ONLY
+@router.get("/all/{faculty_email}")
+def get_all_assessments(faculty_email: str):
 
     assessments = list(
-        assessment_collection.find()
+        assessment_collection.find(
+            {
+                "faculty_email": faculty_email
+            }
+        )
     )
 
     for assessment in assessments:
