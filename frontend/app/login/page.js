@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
@@ -11,41 +12,27 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // ✅ FIX: Clear any previous session so login is always required
   useEffect(() => {
-
-    const token =
-      localStorage.getItem("token");
-
-    const role =
-      localStorage.getItem("userRole");
-
-    if (token && role === "student") {
-
-      router.push(
-        "/student/dashboard"
-      );
-
-    } else if (
-      token &&
-      role === "faculty"
-    ) {
-
-      router.push(
-        "/"
-      );
-
-    }
-
+    localStorage.removeItem("token");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("userEmail");
+    localStorage.removeItem("department");
+    localStorage.removeItem("year");
+    localStorage.removeItem("registerNumber");
   }, []);
 
   const loginUser = async (e) => {
     e.preventDefault();
+
     if (!email || !password) {
       toast.error("Please fill all fields");
       return;
     }
+
     try {
       setLoading(true);
+
       const response = await fetch("http://127.0.0.1:8000/auth/login", {
         method: "POST",
         headers: {
@@ -53,18 +40,23 @@ export default function LoginPage() {
         },
         body: JSON.stringify({ email, password }),
       });
+
       const data = await response.json();
+
       if (!response.ok) {
         toast.error(data.detail || "Login failed");
         return;
       }
+
       localStorage.setItem("token", data.access_token);
       localStorage.setItem("userRole", data.role);
       localStorage.setItem("userEmail", email);
       localStorage.setItem("department", data.department);
       localStorage.setItem("year", data.year);
       localStorage.setItem("registerNumber", data.register_number);
+
       toast.success("Login successful");
+
       if (data.role === "student") {
         router.push("/student/dashboard");
       } else if (data.role === "faculty") {
