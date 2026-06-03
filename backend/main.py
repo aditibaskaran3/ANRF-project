@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from routes.assessment import router as assessment_router
 from routes.auth import router as auth_router
+from routes.submission import router as submission_router
 
 app = FastAPI()
 
@@ -56,4 +57,12 @@ app.include_router(
     auth_router,
     prefix="/auth",
     tags=["Authentication APIs"]
+)
+
+
+# SUBMISSION ROUTES
+app.include_router(
+    submission_router,
+    prefix="/submission",
+    tags=["Submission APIs"]
 )

@@ -3,7 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, Hash, BookOpen } from "lucide-react";
+
+const DEPARTMENTS = ["CSE", "IT", "AIDS", "ECE", "EEE", "MECH", "CIVIL"];
+const YEARS = ["1", "2", "3", "4"];
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -11,22 +14,26 @@ export default function RegisterPage() {
   const [role, setRole] = useState("student");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] =
-    useState("");
-
-  const [showPassword, setShowPassword] =
-    useState(false);
-
-  const [showConfirmPassword, setShowConfirmPassword] =
-    useState(false);
-
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [registerNumber, setRegisterNumber] = useState("");
+  const [department, setDepartment] = useState("");
+  const [year, setYear] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const isStudent = role === "student";
 
   const registerUser = async (e) => {
     e.preventDefault();
 
     if (!email || !password || !confirmPassword) {
       toast.error("Please fill all fields");
+      return;
+    }
+
+    if (isStudent && (!registerNumber || !department || !year)) {
+      toast.error("Please fill all student fields");
       return;
     }
 
@@ -38,20 +45,18 @@ export default function RegisterPage() {
     try {
       setLoading(true);
 
-      const response = await fetch(
-        "http://127.0.0.1:8000/auth/register",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email,
-            password,
-            role,
-          }),
-        }
-      );
+      const payload = { email, password, role };
+      if (isStudent) {
+        payload.register_number = registerNumber.trim();
+        payload.department = department;
+        payload.year = year;
+      }
+
+      const response = await fetch("http://127.0.0.1:8000/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
       const data = await response.json();
 
@@ -71,230 +76,185 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-100 via-slate-50 to-slate-200 flex items-center justify-center px-4">
-
-      <div className="w-full max-w-6xl bg-white rounded-3xl shadow-2xl border border-slate-200 p-5">
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-slate-50 to-slate-200 flex items-center justify-center px-4 py-8">
+      <div className="w-full max-w-6xl bg-white rounded-3xl shadow-2xl border border-slate-200 p-6">
 
         {/* HEADER */}
-        <div className="text-center mb-4">
-          <h1 className="text-4xl font-bold text-slate-900">
-            Create Your Account
-          </h1>
-
-          <p className="text-slate-500 mt-1">
-            Join AssessPro and get started
-          </p>
+        <div className="text-center mb-5">
+          <h1 className="text-4xl font-bold text-slate-900">Create Your Account</h1>
+          <p className="text-slate-500 mt-1">Join AssessPro and get started</p>
         </div>
 
         {/* ROLE SECTION */}
         <div className="mb-5">
-
-          <h2 className="text-lg font-bold text-slate-900 mb-1">
-            Select Your Role
-          </h2>
-
-          <p className="text-slate-500 text-sm mb-3">
-            Choose the role that best describes you
-          </p>
+          <h2 className="text-lg font-bold text-slate-900 mb-1">Select Your Role</h2>
+          <p className="text-slate-500 text-sm mb-3">Choose the role that best describes you</p>
 
           <div className="grid grid-cols-3 gap-4">
-
             {/* STUDENT */}
             <div
               onClick={() => setRole("student")}
               className={`cursor-pointer rounded-2xl border-2 p-4 transition-all duration-300 text-center hover:scale-105
-              ${
-                role === "student"
-                  ? "border-blue-500 bg-blue-50"
-                  : "border-slate-200"
-              }`}
+                ${role === "student" ? "border-blue-500 bg-blue-50" : "border-slate-200"}`}
             >
               <div className="text-5xl mb-2">🎓</div>
-
-              <h3 className="text-xl font-bold text-blue-600">
-                Student
-              </h3>
-
-              <p className="text-xs text-slate-600 mt-1">
-                Access courses & assessments
-              </p>
+              <h3 className="text-xl font-bold text-blue-600">Student</h3>
+              <p className="text-xs text-slate-600 mt-1">Access courses & assessments</p>
             </div>
 
             {/* FACULTY */}
             <div
               onClick={() => setRole("faculty")}
               className={`cursor-pointer rounded-2xl border-2 p-4 transition-all duration-300 text-center hover:scale-105
-              ${
-                role === "faculty"
-                  ? "border-yellow-500 bg-yellow-50"
-                  : "border-slate-200"
-              }`}
+                ${role === "faculty" ? "border-yellow-500 bg-yellow-50" : "border-slate-200"}`}
             >
               <div className="text-5xl mb-2">🧑‍🏫</div>
-
-              <h3 className="text-xl font-bold text-yellow-600">
-                Faculty
-              </h3>
-
-              <p className="text-xs text-slate-600 mt-1">
-                Create & manage assessments
-              </p>
+              <h3 className="text-xl font-bold text-yellow-600">Faculty</h3>
+              <p className="text-xs text-slate-600 mt-1">Create & manage assessments</p>
             </div>
 
             {/* ADMIN */}
             <div
               onClick={() => setRole("admin")}
               className={`cursor-pointer rounded-2xl border-2 p-4 transition-all duration-300 text-center hover:scale-105
-              ${
-                role === "admin"
-                  ? "border-green-500 bg-green-50"
-                  : "border-slate-200"
-              }`}
+                ${role === "admin" ? "border-green-500 bg-green-50" : "border-slate-200"}`}
             >
               <div className="text-5xl mb-2">🧑‍💼</div>
-
-              <h3 className="text-xl font-bold text-green-600">
-                Admin
-              </h3>
-
-              <p className="text-xs text-slate-600 mt-1">
-                Manage users & reports
-              </p>
+              <h3 className="text-xl font-bold text-green-600">Admin</h3>
+              <p className="text-xs text-slate-600 mt-1">Manage users & reports</p>
             </div>
           </div>
         </div>
 
         {/* FORM */}
-        <form
-          onSubmit={registerUser}
-          className="space-y-3"
-        >
+        <form onSubmit={registerUser} className="space-y-3">
+
+          {/* STUDENT EXTRA FIELDS */}
+          {isStudent && (
+            <div className="grid grid-cols-3 gap-3 p-4 bg-blue-50 rounded-2xl border border-blue-100">
+              <p className="col-span-3 text-sm font-semibold text-blue-700 mb-1">Student Details</p>
+
+              {/* REGISTER NUMBER */}
+              <div className="col-span-3 md:col-span-1">
+                <label className="block font-semibold text-slate-700 mb-1 text-sm">Register Number</label>
+                <div className="relative">
+                  <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                  <input
+                    type="text"
+                    placeholder="e.g. 24CS0234"
+                    className="w-full border border-slate-300 py-3 pl-10 pr-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-black placeholder:text-slate-500 text-sm"
+                    value={registerNumber}
+                    onChange={(e) => setRegisterNumber(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* DEPARTMENT */}
+              <div className="col-span-3 md:col-span-1">
+                <label className="block font-semibold text-slate-700 mb-1 text-sm">Department</label>
+                <div className="relative">
+                  <BookOpen className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                  <select
+                    className="w-full border border-slate-300 py-3 pl-10 pr-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-black text-sm appearance-none bg-white"
+                    value={department}
+                    onChange={(e) => setDepartment(e.target.value)}
+                  >
+                    <option value="">Select Department</option>
+                    {DEPARTMENTS.map((d) => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* YEAR */}
+              <div className="col-span-3 md:col-span-1">
+                <label className="block font-semibold text-slate-700 mb-1 text-sm">Year</label>
+                <select
+                  className="w-full border border-slate-300 py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-black text-sm appearance-none bg-white"
+                  value={year}
+                  onChange={(e) => setYear(e.target.value)}
+                >
+                  <option value="">Select Year</option>
+                  {YEARS.map((y) => (
+                    <option key={y} value={y}>Year {y}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
 
           {/* EMAIL */}
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">
-              Email Address
-            </label>
-
+            <label className="block font-semibold text-slate-700 mb-1">Email Address</label>
             <div className="relative">
-              <Mail
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
-                size={18}
-              />
-
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
               <input
                 type="email"
                 placeholder="Enter your email"
                 className="w-full border border-slate-300 py-3 pl-11 pr-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-black placeholder:text-slate-500"
                 value={email}
-                onChange={(e) =>
-                  setEmail(e.target.value)
-                }
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
           </div>
 
           {/* PASSWORD */}
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">
-              Password
-            </label>
-
+            <label className="block font-semibold text-slate-700 mb-1">Password</label>
             <div className="relative">
-              <Lock
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
-                size={18}
-              />
-
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
               <input
-                type={
-                  showPassword ? "text" : "password"
-                }
+                type={showPassword ? "text" : "password"}
                 placeholder="Create password"
                 className="w-full border border-slate-300 py-3 pl-11 pr-11 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-black placeholder:text-slate-500"
                 value={password}
-                onChange={(e) =>
-                  setPassword(e.target.value)
-                }
+                onChange={(e) => setPassword(e.target.value)}
               />
-
               <button
                 type="button"
-                onClick={() =>
-                  setShowPassword(!showPassword)
-                }
+                onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500"
               >
-                {showPassword ? (
-                  <EyeOff size={18} />
-                ) : (
-                  <Eye size={18} />
-                )}
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
 
           {/* CONFIRM PASSWORD */}
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">
-              Confirm Password
-            </label>
-
+            <label className="block font-semibold text-slate-700 mb-1">Confirm Password</label>
             <div className="relative">
-              <Lock
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
-                size={18}
-              />
-
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
               <input
-                type={
-                  showConfirmPassword
-                    ? "text"
-                    : "password"
-                }
+                type={showConfirmPassword ? "text" : "password"}
                 placeholder="Confirm password"
                 className="w-full border border-slate-300 py-3 pl-11 pr-11 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-black placeholder:text-slate-500"
                 value={confirmPassword}
-                onChange={(e) =>
-                  setConfirmPassword(
-                    e.target.value
-                  )
-                }
+                onChange={(e) => setConfirmPassword(e.target.value)}
               />
-
               <button
                 type="button"
-                onClick={() =>
-                  setShowConfirmPassword(
-                    !showConfirmPassword
-                  )
-                }
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500"
               >
-                {showConfirmPassword ? (
-                  <EyeOff size={18} />
-                ) : (
-                  <Eye size={18} />
-                )}
+                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
 
-          {/* BUTTON */}
+          {/* SUBMIT */}
           <button
             type="submit"
             disabled={loading}
             className="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white py-3 rounded-xl text-lg font-semibold shadow-lg hover:opacity-90 transition-all"
           >
-            {loading
-              ? "Creating Account..."
-              : "Create Account"}
+            {loading ? "Creating Account..." : "Create Account"}
           </button>
 
-          {/* LOGIN */}
+          {/* LOGIN LINK */}
           <p className="text-center text-slate-600 text-sm">
             Already have an account?
-
             <span
               onClick={() => router.push("/login")}
               className="text-blue-600 font-semibold cursor-pointer ml-2 hover:underline"

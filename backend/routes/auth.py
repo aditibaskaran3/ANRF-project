@@ -80,9 +80,34 @@ def register(user: User):
     )
 
     users_collection.insert_one({
+
         "email": user.email,
+
         "password": hashed_password,
-        "role": getattr(user, "role", "student")
+
+        "role": getattr(
+            user,
+            "role",
+            "student"
+        ),
+
+        "register_number": getattr(
+            user,
+            "register_number",
+            ""
+        ),
+
+        "department": getattr(
+            user,
+            "department",
+            ""
+        ),
+
+        "year": getattr(
+            user,
+            "year",
+            ""
+        )
     })
 
     return {
@@ -122,10 +147,26 @@ def login(user: User):
     })
 
     return {
-        "access_token": token,
-        "token_type": "bearer",
-        "role": existing_user.get(
-            "role",
-            "student"
-        )
-    }
+    "access_token": token,
+    "token_type": "bearer",
+
+    "role": existing_user.get(
+        "role",
+        "student"
+    ),
+
+    "register_number": existing_user.get(
+        "register_number",
+        ""
+    ),
+
+    "department": existing_user.get(
+        "department",
+        ""
+    ),
+
+    "year": existing_user.get(
+        "year",
+        ""
+    )
+}

@@ -247,7 +247,9 @@ export default function AssessmentCard({
               </p>
 
               <p className="font-semibold text-slate-800">
-                {assessment.examDate}
+                {new Date(
+                  assessment.examDate
+                ).toLocaleDateString("en-GB")}
               </p>
 
             </div>

@@ -6,6 +6,13 @@ export default function PreviewPanel({
   subjectName,
   examDate,
   duration,
+
+  department,
+  year,
+
+  availableFrom,
+  availableTo,
+
   instructions,
   questions
 }) {
@@ -59,6 +66,34 @@ export default function PreviewPanel({
               Duration:
             </span>{" "}
             {duration || "-"}
+          </p>
+
+          <p>
+            <span className="font-semibold">
+              Department:
+            </span>{" "}
+            {department || "-"}
+          </p>
+
+          <p>
+            <span className="font-semibold">
+              Year:
+            </span>{" "}
+            {year || "-"}
+          </p>
+
+          <p>
+            <span className="font-semibold">
+              Available From:
+            </span>{" "}
+            {availableFrom || "-"}
+          </p>
+
+          <p>
+            <span className="font-semibold">
+              Available To:
+            </span>{" "}
+            {availableTo || "-"}
           </p>
 
         </div>

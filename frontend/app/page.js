@@ -13,6 +13,7 @@ import AssessmentCard from "./components/AssessmentCard";
 import PreviewPanel from "./components/PreviewPanel";
 import AnalyticsChart from "./components/AnalyticsChart";
 import RecentActivity from "./components/RecentActivity";
+import Select from "react-select";
 
 export default function Home() {
 
@@ -32,6 +33,30 @@ export default function Home() {
   const [examDate, setExamDate] = useState("");
   const [duration, setDuration] = useState("");
   const [instructions, setInstructions] = useState("");
+  const [department, setDepartment] = useState("All Departments");
+  const [year, setYear] = useState("All Years");
+  const [selectedDepartments, setSelectedDepartments] = useState([]);
+  const [selectedYears, setSelectedYears] = useState([]);
+  const [showDepartmentDropdown, setShowDepartmentDropdown] = useState(false);
+  const [showYearDropdown, setShowYearDropdown] = useState(false);
+  const departmentOptions = [
+    "CS",
+    "IT",
+    "AIDS",
+    "ECE",
+    "EEE",
+    "MECH",
+    "CIVIL"
+  ];
+
+  const yearOptions = [
+    "1",
+    "2",
+    "3",
+    "4"
+  ];
+  const [availableFrom, setAvailableFrom] = useState("");
+  const [availableTo, setAvailableTo] = useState("");
 
   const [showPreview, setShowPreview] = useState(false);
 
@@ -86,6 +111,17 @@ export default function Home() {
       setExamDate(parsedDraft.examDate || "");
       setDuration(parsedDraft.duration || "");
       setInstructions(parsedDraft.instructions || "");
+      setDepartment(
+        parsedDraft.department || "All Departments");
+
+      setYear(
+        parsedDraft.year || "All Years");
+
+      setAvailableFrom(
+        parsedDraft.availableFrom || "");
+
+      setAvailableTo(
+        parsedDraft.availableTo || "");
 
       setQuestions(
         parsedDraft.questions || [
@@ -115,11 +151,16 @@ export default function Home() {
         examDate,
         duration,
         instructions,
+        department,
+        year,
+        availableFrom,
+        availableTo,
+
         questions
       })
     );
 
-  }, [title, subjectCode, subjectName, examDate, duration, instructions, questions]);
+  }, [title, subjectCode, subjectName, examDate, duration, instructions, department, year, availableFrom, availableTo, questions]);
 
 
   // FETCH ASSESSMENTS
@@ -165,6 +206,10 @@ export default function Home() {
     setExamDate("");
     setDuration("");
     setInstructions("");
+    setDepartment("All Departments");
+    setYear("All Years");
+    setAvailableFrom("");
+    setAvailableTo("");
     setQuestions([
       {
         question: "",
@@ -238,6 +283,17 @@ export default function Home() {
     examDate,
     duration,
     instructions,
+
+    departments: selectedDepartments.map(
+      (dept) => dept.value
+    ),
+
+    years: selectedYears.map(
+      (year) => year.value
+    ),
+
+    availableFrom,
+    availableTo,
     questions,
     id: editingAssessmentId,
     status,
@@ -580,6 +636,59 @@ export default function Home() {
 
                 </div>
 
+                {/* TARGET STUDENTS */}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+
+                  <div>
+
+                    <label className="block text-sm font-semibold text-slate-600 mb-4">
+                      Department
+                    </label>
+
+                    <Select
+                      isMulti
+                      options={[
+                        { value: "CS", label: "CS" },
+                        { value: "IT", label: "IT" },
+                        { value: "AIDS", label: "AIDS" },
+                        { value: "ECE", label: "ECE" },
+                        { value: "EEE", label: "EEE" },
+                        { value: "MECH", label: "MECH" },
+                        { value: "CIVIL", label: "CIVIL" }
+                      ]}
+                      value={selectedDepartments}
+                      onChange={setSelectedDepartments}
+                      placeholder="Select Departments"
+                    />
+
+                  </div>
+
+                  {/* Year */}
+
+                  <div>
+
+                    <label className="block text-sm font-semibold text-slate-600 mb-4">
+                      Year
+                    </label>
+
+                    <Select
+                      isMulti
+                      options={[
+                        { value: "1", label: "1" },
+                        { value: "2", label: "2" },
+                        { value: "3", label: "3" },
+                        { value: "4", label: "4" }
+                      ]}
+                      value={selectedYears}
+                      onChange={setSelectedYears}
+                      placeholder="Select Years"
+                    />
+
+                  </div>
+
+                </div>
+
 
                 {/* Date of Examination & Total Time */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -611,6 +720,46 @@ export default function Home() {
                       className="w-full border border-slate-200 bg-slate-50 p-5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition"
                       value={duration}
                       onChange={(e) => setDuration(e.target.value)}
+                    />
+
+                  </div>
+
+                </div>
+
+
+                {/* ASSESSMENT WINDOW */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+
+                  <div>
+
+                    <label className="block text-sm font-semibold text-slate-600 mb-4">
+                      Available From
+                    </label>
+
+                    <input
+                      type="datetime-local"
+                      value={availableFrom}
+                      onChange={(e) =>
+                        setAvailableFrom(e.target.value)
+                      }
+                      className="w-full border border-slate-200 bg-slate-50 p-5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition"
+                    />
+
+                  </div>
+
+                  <div>
+
+                    <label className="block text-sm font-semibold text-slate-600 mb-4">
+                      Available To
+                    </label>
+
+                    <input
+                      type="datetime-local"
+                      value={availableTo}
+                      onChange={(e) =>
+                        setAvailableTo(e.target.value)
+                      }
+                      className="w-full border border-slate-200 bg-slate-50 p-5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition"
                     />
 
                   </div>
@@ -666,6 +815,13 @@ export default function Home() {
                   subjectName={subjectName}
                   examDate={examDate}
                   duration={duration}
+
+                  department={department}
+                  year={year}
+
+                  availableFrom={availableFrom}
+                  availableTo={availableTo}
+
                   instructions={instructions}
                   questions={questions}
                 />
@@ -681,21 +837,21 @@ export default function Home() {
           {(activeSection === "Drafts" ||
             activeSection === "Published") && (
 
-            <div className="mb-8">
+              <div className="mb-8">
 
-              <input
-                type="text"
-                placeholder="Search assessments..."
-                value={searchTerm}
-                onChange={(e) =>
-                  setSearchTerm(e.target.value)
-                }
-                className="w-full md:w-[400px] border border-slate-200 bg-white p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition shadow-sm"
-              />
+                <input
+                  type="text"
+                  placeholder="Search assessments..."
+                  value={searchTerm}
+                  onChange={(e) =>
+                    setSearchTerm(e.target.value)
+                  }
+                  className="w-full md:w-[400px] border border-slate-200 bg-white p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition shadow-sm"
+                />
 
-            </div>
+              </div>
 
-          )}
+            )}
 
 
           {/* DRAFTS */}
