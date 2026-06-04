@@ -5,9 +5,9 @@ import {
   Pie,
   Cell,
   Tooltip,
+  Legend,
   ResponsiveContainer
 } from "recharts";
-
 export default function AnalyticsChart({
   savedAssessments
 }) {
@@ -82,6 +82,7 @@ export default function AnalyticsChart({
             </Pie>
 
             <Tooltip />
+<Legend />
 
           </PieChart>
 

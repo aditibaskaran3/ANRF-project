@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
 import { useRouter } from "next/navigation";
 
 export default function Navbar({
@@ -10,73 +9,53 @@ export default function Navbar({
   showPreview,
   setShowPreview,
   createNewAssessment,
-  saving
+  saving,
+  activeSection
 }) {
 
   const router = useRouter();
-
   const [facultyEmail, setFacultyEmail] = useState("");
 
-
   useEffect(() => {
-
-    const email = localStorage.getItem(
-      "facultyEmail"
-    );
-
+    const email = localStorage.getItem("facultyEmail");
     if (email) {
-
       setFacultyEmail(email);
     }
-
   }, []);
 
-
-  // LOGOUT
   const logoutUser = () => {
-
     localStorage.removeItem("token");
-
     localStorage.removeItem("facultyEmail");
-
     router.push("/login");
   };
 
+  const isCreatePage = activeSection === "Create Assessment";
 
   return (
-
     <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 px-8 py-5 flex items-center justify-between">
 
       {/* LEFT */}
       <div>
-
         <h1 className="text-2xl font-bold text-slate-900">
           AssessPro
         </h1>
-
         <p className="text-slate-500 text-sm mt-1">
           Academic Evaluation Platform
         </p>
-
       </div>
-
 
       {/* RIGHT */}
       <div className="flex items-center gap-4">
 
         {/* EMAIL */}
         <div className="hidden md:flex flex-col items-end mr-3">
-
           <p className="text-sm font-semibold text-slate-800">
             Faculty Logged In
           </p>
-
           <p className="text-xs text-slate-500">
             {facultyEmail}
           </p>
-
         </div>
-
 
         {/* NEW */}
         <button
@@ -86,47 +65,37 @@ export default function Navbar({
           New
         </button>
 
+        {/* PREVIEW — only on Create Assessment page */}
+        {isCreatePage && (
+          <button
+            onClick={() => setShowPreview(!showPreview)}
+            className="bg-slate-200 hover:bg-slate-300 transition text-slate-800 px-5 py-2 rounded-xl font-semibold text-sm"
+          >
+            {showPreview ? "Hide Preview" : "Preview"}
+          </button>
+        )}
 
-        {/* PREVIEW */}
-        <button
-          onClick={() =>
-            setShowPreview(!showPreview)
-          }
-          className="bg-slate-200 hover:bg-slate-300 transition text-slate-800 px-5 py-2 rounded-xl font-semibold text-sm"
-        >
+        {/* SAVE — only on Create Assessment page */}
+        {isCreatePage && (
+          <button
+            onClick={saveAssessment}
+            disabled={saving}
+            className="bg-slate-900 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition text-white px-5 py-2 rounded-xl font-semibold text-sm shadow-sm"
+          >
+            {saving ? "Saving..." : "Save Draft"}
+          </button>
+        )}
 
-          {showPreview
-            ? "Hide Preview"
-            : "Preview"}
-
-        </button>
-
-
-        {/* SAVE */}
-        <button
-          onClick={saveAssessment}
-          disabled={saving}
-          className="bg-slate-900 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition text-white px-5 py-2 rounded-xl font-semibold text-sm shadow-sm"
-        >
-
-          {saving
-            ? "Saving..."
-            : "Save Draft"}
-
-        </button>
-
-
-        {/* PUBLISH */}
-        <button
-          onClick={publishAssessment}
-          disabled={saving}
-          className="bg-sky-600 hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed transition text-white px-5 py-2 rounded-xl font-semibold text-sm shadow-sm"
-        >
-
-          Publish
-
-        </button>
-
+        {/* PUBLISH — only on Create Assessment page */}
+        {isCreatePage && (
+          <button
+            onClick={publishAssessment}
+            disabled={saving}
+            className="bg-sky-600 hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed transition text-white px-5 py-2 rounded-xl font-semibold text-sm shadow-sm"
+          >
+            Publish
+          </button>
+        )}
 
         {/* LOGOUT */}
         <button
@@ -137,7 +106,6 @@ export default function Navbar({
         </button>
 
       </div>
-
     </div>
   );
 }

@@ -35,7 +35,6 @@ export default function QuestionCard({
 
         </div>
 
-
         {/* ACTIONS */}
         <div className="flex items-center gap-3">
 
@@ -45,7 +44,6 @@ export default function QuestionCard({
           >
             +
           </button>
-
 
           <button
             onClick={() => deleteQuestion(index)}
@@ -57,7 +55,6 @@ export default function QuestionCard({
         </div>
 
       </div>
-
 
       {/* FORM */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -80,7 +77,6 @@ export default function QuestionCard({
 
         </div>
 
-
         {/* ANSWER KEY */}
         <div className="lg:col-span-2">
 
@@ -98,7 +94,6 @@ export default function QuestionCard({
           />
 
         </div>
-
 
         {/* RUBRIC */}
         <div>
@@ -118,7 +113,6 @@ export default function QuestionCard({
 
         </div>
 
-
         {/* MARKS */}
         <div>
 
@@ -137,7 +131,6 @@ export default function QuestionCard({
           />
 
         </div>
-
 
         {/* EXPECTED LENGTH */}
         <div className="lg:col-span-2">

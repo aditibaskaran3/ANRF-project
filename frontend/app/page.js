@@ -27,7 +27,6 @@ export default function Home() {
 
   const [title, setTitle] = useState("");
 
-  // NEW EXAM METADATA FIELDS
   const [subjectCode, setSubjectCode] = useState("");
   const [subjectName, setSubjectName] = useState("");
   const [examDate, setExamDate] = useState("");
@@ -39,33 +38,19 @@ export default function Home() {
   const [selectedYears, setSelectedYears] = useState([]);
   const [showDepartmentDropdown, setShowDepartmentDropdown] = useState(false);
   const [showYearDropdown, setShowYearDropdown] = useState(false);
+
   const departmentOptions = [
-    "CS",
-    "IT",
-    "AIDS",
-    "ECE",
-    "EEE",
-    "MECH",
-    "CIVIL"
+    "CS", "IT", "AIDS", "ECE", "EEE", "MECH", "CIVIL"
   ];
 
-  const yearOptions = [
-    "1",
-    "2",
-    "3",
-    "4"
-  ];
+  const yearOptions = ["1", "2", "3", "4"];
+
   const [availableFrom, setAvailableFrom] = useState("");
   const [availableTo, setAvailableTo] = useState("");
-
   const [showPreview, setShowPreview] = useState(false);
-
   const [savedAssessments, setSavedAssessments] = useState([]);
-
   const [searchTerm, setSearchTerm] = useState("");
-
   const [editingAssessmentId, setEditingAssessmentId] = useState(null);
-
   const [saving, setSaving] = useState(false);
 
   const [questions, setQuestions] = useState([
@@ -77,6 +62,19 @@ export default function Home() {
       expected_length: ""
     }
   ]);
+
+
+  // UNSAVED CHANGES WARNING
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (activeSection === "Create Assessment" && title.trim()) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [activeSection, title]);
 
 
   // AUTH CHECK
@@ -99,47 +97,42 @@ export default function Home() {
   // LOAD AUTOSAVE
   useEffect(() => {
 
-    const savedDraft = localStorage.getItem("assessmentDraft");
+  const savedDraft = localStorage.getItem("assessmentDraft");
 
-    if (savedDraft) {
+  if (savedDraft) {
 
-      const parsedDraft = JSON.parse(savedDraft);
+    const parsedDraft = JSON.parse(savedDraft);
 
-      setTitle(parsedDraft.title || "");
-      setSubjectCode(parsedDraft.subjectCode || "");
-      setSubjectName(parsedDraft.subjectName || "");
-      setExamDate(parsedDraft.examDate || "");
-      setDuration(parsedDraft.duration || "");
-      setInstructions(parsedDraft.instructions || "");
-      setDepartment(
-        parsedDraft.department || "All Departments");
-
-      setYear(
-        parsedDraft.year || "All Years");
-
-      setAvailableFrom(
-        parsedDraft.availableFrom || "");
-
-      setAvailableTo(
-        parsedDraft.availableTo || "");
-
-      setQuestions(
-        parsedDraft.questions || [
-          {
-            question: "",
-            answer_key: "",
-            rubric: "",
-            marks: "",
-            expected_length: ""
-          }
-        ]
-      );
+    if (!parsedDraft.title && (!parsedDraft.questions || !parsedDraft.questions[0]?.question)) {
+      return;
     }
 
-  }, []);
+    setTitle(parsedDraft.title || "");
+    setSubjectCode(parsedDraft.subjectCode || "");
+    setSubjectName(parsedDraft.subjectName || "");
+    setExamDate(parsedDraft.examDate || "");
+    setDuration(parsedDraft.duration || "");
+    setInstructions(parsedDraft.instructions || "");
+    setDepartment(parsedDraft.department || "All Departments");
+    setYear(parsedDraft.year || "All Years");
+    setAvailableFrom(parsedDraft.availableFrom || "");
+    setAvailableTo(parsedDraft.availableTo || "");
+    setQuestions(
+      parsedDraft.questions || [
+        {
+          question: "",
+          answer_key: "",
+          rubric: "",
+          marks: "",
+          expected_length: ""
+        }
+      ]
+    );
+  }
 
+}, []);
 
-  // AUTOSAVE — includes new metadata fields
+  // AUTOSAVE
   useEffect(() => {
 
     localStorage.setItem(
@@ -155,7 +148,6 @@ export default function Home() {
         year,
         availableFrom,
         availableTo,
-
         questions
       })
     );
@@ -181,7 +173,6 @@ export default function Home() {
 
       const data = await response.json();
 
-      // SORT NEWEST FIRST — MongoDB _id is timestamp-based
       const sorted = [...data].sort((a, b) => {
         if (a._id < b._id) return 1;
         if (a._id > b._id) return -1;
@@ -197,9 +188,8 @@ export default function Home() {
   };
 
 
-  // RESET ALL FIELDS HELPER
+  // RESET ALL FIELDS
   const resetFields = () => {
-
     setTitle("");
     setSubjectCode("");
     setSubjectName("");
@@ -208,17 +198,17 @@ export default function Home() {
     setInstructions("");
     setDepartment("All Departments");
     setYear("All Years");
+    setSelectedDepartments([]);
+    setSelectedYears([]);
     setAvailableFrom("");
     setAvailableTo("");
-    setQuestions([
-      {
-        question: "",
-        answer_key: "",
-        rubric: "",
-        marks: "",
-        expected_length: ""
-      }
-    ]);
+    setQuestions([{
+      question: "",
+      answer_key: "",
+      rubric: "",
+      marks: "",
+      expected_length: ""
+    }]);
     setEditingAssessmentId(null);
   };
 
@@ -275,7 +265,7 @@ export default function Home() {
   };
 
 
-  // BUILD ASSESSMENT PAYLOAD — shared by save and publish
+  // BUILD PAYLOAD
   const buildPayload = (status) => ({
     title,
     subjectCode,
@@ -283,15 +273,8 @@ export default function Home() {
     examDate,
     duration,
     instructions,
-
-    departments: selectedDepartments.map(
-      (dept) => dept.value
-    ),
-
-    years: selectedYears.map(
-      (year) => year.value
-    ),
-
+    departments: selectedDepartments.map((dept) => dept.value),
+    years: selectedYears.map((year) => year.value),
     availableFrom,
     availableTo,
     questions,
@@ -312,15 +295,21 @@ export default function Home() {
     for (let q of questions) {
 
       if (
-        !q.question.trim() ||
-        !q.answer_key.trim() ||
-        !q.rubric.trim() ||
-        !q.marks ||
-        !q.expected_length.trim()
-      ) {
-        toast.error("Please fill all question fields");
-        return false;
-      }
+  !q.question.trim() ||
+  !q.answer_key.trim() ||
+  !q.rubric.trim() ||
+  !q.marks ||
+  !q.expected_length.trim()
+) {
+  toast.error("Please fill all question fields");
+  return false;
+}
+
+const marksVal = parseInt(q.marks);
+if (isNaN(marksVal) || marksVal < 1 || marksVal > 100) {
+  toast.error("Marks must be between 1 and 100");
+  return false;
+}
     }
 
     return true;
@@ -348,13 +337,14 @@ export default function Home() {
       );
 
       if (!response.ok) {
-
         throw new Error("Failed to save");
       }
 
       toast.success("Assessment saved successfully");
 
-      setEditingAssessmentId(null);
+      resetFields();
+
+      localStorage.removeItem("assessmentDraft");
 
       fetchAssessments();
 
@@ -376,12 +366,7 @@ export default function Home() {
   // PUBLISH ASSESSMENT
   const publishAssessment = async () => {
 
-    if (!title.trim()) {
-
-      toast.error("Assessment title is required");
-
-      return;
-    }
+    if (!validateFields()) return;
 
     try {
 
@@ -399,13 +384,14 @@ export default function Home() {
       );
 
       if (!response.ok) {
-
         throw new Error();
       }
 
-      toast.success(
-        "Assessment published successfully"
-      );
+      toast.success("Assessment published successfully");
+
+      resetFields();
+
+      localStorage.removeItem("assessmentDraft");
 
       fetchAssessments();
 
@@ -415,9 +401,7 @@ export default function Home() {
 
       console.error(error);
 
-      toast.error(
-        "Failed to publish assessment"
-      );
+      toast.error("Failed to publish assessment");
 
     } finally {
 
@@ -464,7 +448,6 @@ export default function Home() {
         setActiveSection={setActiveSection}
       />
 
-
       {/* MAIN CONTENT */}
       <div
         className={`w-full transition-all duration-300
@@ -479,8 +462,8 @@ export default function Home() {
           setShowPreview={setShowPreview}
           createNewAssessment={createNewAssessment}
           saving={saving}
+          activeSection={activeSection}
         />
-
 
         {/* PAGE CONTENT */}
         <div className="px-10 py-10">
@@ -490,65 +473,33 @@ export default function Home() {
 
             <div>
 
-              {/* STATS */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
                 <div className="bg-white rounded-[30px] p-7 border border-slate-200 shadow-sm">
-
-                  <p className="text-slate-500 text-sm mb-2">
-                    Total Assessments
-                  </p>
-
+                  <p className="text-slate-500 text-sm mb-2">Total Assessments</p>
                   <h2 className="text-5xl font-bold text-slate-900">
                     {savedAssessments.length}
                   </h2>
-
                 </div>
 
-
                 <div className="bg-white rounded-[30px] p-7 border border-slate-200 shadow-sm">
-
-                  <p className="text-slate-500 text-sm mb-2">
-                    Draft Assessments
-                  </p>
-
+                  <p className="text-slate-500 text-sm mb-2">Draft Assessments</p>
                   <h2 className="text-5xl font-bold text-slate-900">
-                    {
-                      savedAssessments.filter(
-                        (a) => a.status === "Draft"
-                      ).length
-                    }
+                    {savedAssessments.filter((a) => a.status === "Draft").length}
                   </h2>
-
                 </div>
 
-
                 <div className="bg-white rounded-[30px] p-7 border border-slate-200 shadow-sm">
-
-                  <p className="text-slate-500 text-sm mb-2">
-                    Published Assessments
-                  </p>
-
+                  <p className="text-slate-500 text-sm mb-2">Published Assessments</p>
                   <h2 className="text-5xl font-bold text-slate-900">
-                    {
-                      savedAssessments.filter(
-                        (a) => a.status === "Published"
-                      ).length
-                    }
+                    {savedAssessments.filter((a) => a.status === "Published").length}
                   </h2>
-
                 </div>
 
               </div>
 
-
-              {/* RECENT ACTIVITY */}
               <div className="mt-10">
-
-                <RecentActivity
-                  savedAssessments={savedAssessments}
-                />
-
+                <RecentActivity savedAssessments={savedAssessments} />
               </div>
 
             </div>
@@ -561,33 +512,22 @@ export default function Home() {
 
             <div className="space-y-10">
 
-              {/* BUILDER */}
               <div className="bg-white rounded-[30px] border border-slate-200 p-10 mb-12 shadow-sm">
 
                 <div className="mb-10">
-
                   <h2 className="text-4xl font-bold text-slate-900">
-
-                    {editingAssessmentId
-                      ? "Edit Assessment"
-                      : "Create Assessment"}
-
+                    {editingAssessmentId ? "Edit Assessment" : "Create Assessment"}
                   </h2>
-
                   <p className="text-slate-500 mt-3 text-lg">
                     Build professional assessments for students
                   </p>
-
                 </div>
-
 
                 {/* TITLE */}
                 <div className="mb-8">
-
                   <label className="block text-sm font-semibold text-slate-600 mb-4">
                     Assessment Title
                   </label>
-
                   <input
                     type="text"
                     placeholder="Enter assessment title"
@@ -595,19 +535,15 @@ export default function Home() {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                   />
-
                 </div>
 
-
-                {/* EXAM METADATA — Subject Code & Subject Name */}
+                {/* SUBJECT CODE & NAME */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
 
                   <div>
-
                     <label className="block text-sm font-semibold text-slate-600 mb-4">
                       Subject Code
                     </label>
-
                     <input
                       type="text"
                       placeholder="e.g. CS301"
@@ -615,15 +551,12 @@ export default function Home() {
                       value={subjectCode}
                       onChange={(e) => setSubjectCode(e.target.value)}
                     />
-
                   </div>
 
                   <div>
-
                     <label className="block text-sm font-semibold text-slate-600 mb-4">
                       Subject Name
                     </label>
-
                     <input
                       type="text"
                       placeholder="e.g. Database Management Systems"
@@ -631,25 +564,21 @@ export default function Home() {
                       value={subjectName}
                       onChange={(e) => setSubjectName(e.target.value)}
                     />
-
                   </div>
 
                 </div>
 
-                {/* TARGET STUDENTS */}
-
+                {/* DEPARTMENT & YEAR */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
 
                   <div>
-
                     <label className="block text-sm font-semibold text-slate-600 mb-4">
                       Department
                     </label>
-
                     <Select
                       isMulti
                       options={[
-                        { value: "CS", label: "CS" },
+                        { value: "CSE", label: "CSE" },
                         { value: "IT", label: "IT" },
                         { value: "AIDS", label: "AIDS" },
                         { value: "ECE", label: "ECE" },
@@ -661,17 +590,12 @@ export default function Home() {
                       onChange={setSelectedDepartments}
                       placeholder="Select Departments"
                     />
-
                   </div>
 
-                  {/* Year */}
-
                   <div>
-
                     <label className="block text-sm font-semibold text-slate-600 mb-4">
                       Year
                     </label>
-
                     <Select
                       isMulti
                       options={[
@@ -684,36 +608,29 @@ export default function Home() {
                       onChange={setSelectedYears}
                       placeholder="Select Years"
                     />
-
                   </div>
 
                 </div>
 
-
-                {/* Date of Examination & Total Time */}
+                {/* DATE & DURATION */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
 
                   <div>
-
                     <label className="block text-sm font-semibold text-slate-600 mb-4">
                       Date of Examination
                     </label>
-
                     <input
                       type="date"
                       className="w-full border border-slate-200 bg-slate-50 p-5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition text-slate-700"
                       value={examDate}
                       onChange={(e) => setExamDate(e.target.value)}
                     />
-
                   </div>
 
                   <div>
-
                     <label className="block text-sm font-semibold text-slate-600 mb-4">
                       Total Time
                     </label>
-
                     <input
                       type="text"
                       placeholder="e.g. 90 Minutes"
@@ -721,75 +638,56 @@ export default function Home() {
                       value={duration}
                       onChange={(e) => setDuration(e.target.value)}
                     />
-
                   </div>
 
                 </div>
 
-
-                {/* ASSESSMENT WINDOW */}
+                {/* AVAILABLE FROM & TO */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
 
                   <div>
-
                     <label className="block text-sm font-semibold text-slate-600 mb-4">
                       Available From
                     </label>
-
                     <input
                       type="datetime-local"
                       value={availableFrom}
-                      onChange={(e) =>
-                        setAvailableFrom(e.target.value)
-                      }
+                      onChange={(e) => setAvailableFrom(e.target.value)}
                       className="w-full border border-slate-200 bg-slate-50 p-5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition"
                     />
-
                   </div>
 
                   <div>
-
                     <label className="block text-sm font-semibold text-slate-600 mb-4">
                       Available To
                     </label>
-
                     <input
                       type="datetime-local"
                       value={availableTo}
-                      onChange={(e) =>
-                        setAvailableTo(e.target.value)
-                      }
+                      onChange={(e) => setAvailableTo(e.target.value)}
                       className="w-full border border-slate-200 bg-slate-50 p-5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition"
                     />
-
                   </div>
 
                 </div>
 
-
                 {/* INSTRUCTIONS */}
                 <div className="mb-10">
-
                   <label className="block text-sm font-semibold text-slate-600 mb-4">
                     Exam Instructions
                   </label>
-
                   <textarea
                     rows={5}
-                    placeholder="Enter exam instructions for students (e.g. Answer all questions. Each question carries marks as indicated. No calculators allowed.)"
+                    placeholder="Enter exam instructions for students"
                     className="w-full border border-slate-200 bg-slate-50 p-5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition resize-none text-slate-700"
                     value={instructions}
                     onChange={(e) => setInstructions(e.target.value)}
                   />
-
                 </div>
-
 
                 {/* QUESTIONS */}
                 <div className="space-y-8">
-
                   {questions.map((q, index) => (
-
                     <QuestionCard
                       key={index}
                       q={q}
@@ -798,34 +696,26 @@ export default function Home() {
                       deleteQuestion={deleteQuestion}
                       updateQuestion={updateQuestion}
                     />
-
                   ))}
-
                 </div>
 
               </div>
 
-
               {/* PREVIEW PANEL */}
               {showPreview && (
-
                 <PreviewPanel
                   title={title}
                   subjectCode={subjectCode}
                   subjectName={subjectName}
                   examDate={examDate}
                   duration={duration}
-
-                  department={department}
-                  year={year}
-
+                  department={selectedDepartments.map(d => d.value).join(", ") || "All Departments"}
+                  year={selectedYears.map(y => y.value).join(", ") || "All Years"}
                   availableFrom={availableFrom}
                   availableTo={availableTo}
-
                   instructions={instructions}
                   questions={questions}
                 />
-
               )}
 
             </div>
@@ -834,24 +724,17 @@ export default function Home() {
 
 
           {/* SEARCH BAR */}
-          {(activeSection === "Drafts" ||
-            activeSection === "Published") && (
-
-              <div className="mb-8">
-
-                <input
-                  type="text"
-                  placeholder="Search assessments..."
-                  value={searchTerm}
-                  onChange={(e) =>
-                    setSearchTerm(e.target.value)
-                  }
-                  className="w-full md:w-[400px] border border-slate-200 bg-white p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition shadow-sm"
-                />
-
-              </div>
-
-            )}
+          {(activeSection === "Drafts" || activeSection === "Published") && (
+            <div className="mb-8">
+              <input
+                type="text"
+                placeholder="Search assessments..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full md:w-[400px] border border-slate-200 bg-white p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition shadow-sm"
+              />
+            </div>
+          )}
 
 
           {/* DRAFTS */}
@@ -860,32 +743,22 @@ export default function Home() {
             <div>
 
               <div className="mb-8">
-
                 <h2 className="text-4xl font-bold text-slate-900 mb-3">
                   Draft Assessments
                 </h2>
-
                 <p className="text-slate-500 text-lg">
                   Continue editing previously saved drafts
                 </p>
-
               </div>
 
-
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-
                 {savedAssessments
                   .filter(
                     (assessment) =>
                       assessment.status === "Draft" &&
-                      assessment.title
-                        .toLowerCase()
-                        .includes(
-                          searchTerm.toLowerCase()
-                        )
+                      assessment.title.toLowerCase().includes(searchTerm.toLowerCase())
                   )
                   .map((assessment) => (
-
                     <AssessmentCard
                       key={assessment._id}
                       assessment={assessment}
@@ -899,10 +772,10 @@ export default function Home() {
                       setExamDate={setExamDate}
                       setDuration={setDuration}
                       setInstructions={setInstructions}
+                      setSelectedDepartments={setSelectedDepartments}
+                      setSelectedYears={setSelectedYears}
                     />
-
                   ))}
-
               </div>
 
             </div>
@@ -916,32 +789,22 @@ export default function Home() {
             <div>
 
               <div className="mb-8">
-
                 <h2 className="text-4xl font-bold text-slate-900 mb-3">
                   Published Assessments
                 </h2>
-
                 <p className="text-slate-500 text-lg">
                   Live assessments available for students
                 </p>
-
               </div>
 
-
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-
                 {savedAssessments
                   .filter(
                     (assessment) =>
                       assessment.status === "Published" &&
-                      assessment.title
-                        .toLowerCase()
-                        .includes(
-                          searchTerm.toLowerCase()
-                        )
+                      assessment.title.toLowerCase().includes(searchTerm.toLowerCase())
                   )
                   .map((assessment) => (
-
                     <AssessmentCard
                       key={assessment._id}
                       assessment={assessment}
@@ -955,10 +818,10 @@ export default function Home() {
                       setExamDate={setExamDate}
                       setDuration={setDuration}
                       setInstructions={setInstructions}
+                      setSelectedDepartments={setSelectedDepartments}
+                      setSelectedYears={setSelectedYears}
                     />
-
                   ))}
-
               </div>
 
             </div>
@@ -970,11 +833,7 @@ export default function Home() {
           {activeSection === "Analytics" && (
 
             <div className="space-y-8">
-
-              <AnalyticsChart
-                savedAssessments={savedAssessments}
-              />
-
+              <AnalyticsChart savedAssessments={savedAssessments} />
             </div>
 
           )}

@@ -135,8 +135,8 @@ export default function PreviewPanel({
                 </h2>
 
                 <div className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-semibold">
-                  {q.marks || 0} Marks
-                </div>
+  {q.marks > 0 ? q.marks : 0} Marks
+</div>
 
               </div>
 
@@ -151,20 +151,26 @@ export default function PreviewPanel({
             </div>
 
 
-            {/* STUDENT ANSWER BOX */}
-            <div>
+           {/* STUDENT ANSWER BOX */}
+<div>
 
-              <label className="block text-lg font-semibold text-slate-700 mb-3">
-                Your Answer
-              </label>
+  <label className="block text-lg font-semibold text-slate-700 mb-3">
+    Your Answer
+  </label>
 
-              <textarea
-                rows={6}
-                placeholder="Write your answer here..."
-                className="w-full border border-slate-300 rounded-2xl p-5 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-white"
-              />
+  <textarea
+    rows={6}
+    placeholder="Write your answer here..."
+    className="w-full border border-slate-300 rounded-2xl p-5 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-white"
+  />
 
-            </div>
+  {q.expected_length && (
+    <p className="text-sm text-slate-500 mt-2">
+      Expected length: {q.expected_length}
+    </p>
+  )}
+
+</div>
 
           </div>
 
