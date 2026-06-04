@@ -5,11 +5,11 @@ export default function RecentActivity({
 }) {
 
   const recentAssessments = [...savedAssessments]
-    .filter(
-      (assessment) =>
-        assessment.status
-    )
-    .reverse()
+    .sort((a, b) => {
+      if (a._id < b._id) return 1;
+      if (a._id > b._id) return -1;
+      return 0;
+    })
     .slice(0, 5);
 
 
@@ -65,10 +65,9 @@ export default function RecentActivity({
 
               <span
                 className={`px-4 py-2 rounded-xl text-sm font-semibold
-
                 ${assessment.status === "Published"
                   ? "bg-green-100 text-green-700"
-                  : "bg-slate-100 text-slate-700"}
+                  : "bg-amber-100 text-amber-700"}
                 `}
               >
                 {assessment.status}

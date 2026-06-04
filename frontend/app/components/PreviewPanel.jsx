@@ -118,7 +118,7 @@ export default function PreviewPanel({
       {/* QUESTIONS — Answer Key, Rubric, Expected Length intentionally hidden */}
       <div className="space-y-8">
 
-        {questions.map((q, index) => (
+        {questions.filter(q => q.question && q.question.trim()).map((q, index) => (
 
           <div
             key={index}

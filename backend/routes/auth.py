@@ -118,28 +118,20 @@ def register(user: User):
 # LOGIN
 @router.post("/login")
 def login(user: User):
-
     existing_user = users_collection.find_one({
         "email": user.email
     })
 
     if not existing_user:
-
         raise HTTPException(
             status_code=400,
-            detail="Invalid Email"
+            detail="Invalid email"
         )
 
-    valid_password = verify_password(
-        user.password,
-        existing_user["password"]
-    )
-
-    if not valid_password:
-
+    if not verify_password(user.password, existing_user["password"]):
         raise HTTPException(
             status_code=400,
-            detail="Invalid Password"
+            detail="Invalid password"
         )
 
     token = create_access_token({
@@ -147,26 +139,10 @@ def login(user: User):
     })
 
     return {
-    "access_token": token,
-    "token_type": "bearer",
-
-    "role": existing_user.get(
-        "role",
-        "student"
-    ),
-
-    "register_number": existing_user.get(
-        "register_number",
-        ""
-    ),
-
-    "department": existing_user.get(
-        "department",
-        ""
-    ),
-
-    "year": existing_user.get(
-        "year",
-        ""
-    )
-}
+        "access_token": token,
+        "token_type": "bearer",
+        "role": existing_user.get("role", "student"),
+        "register_number": existing_user.get("register_number", ""),
+        "department": existing_user.get("department", ""),
+        "year": existing_user.get("year", "")
+    }

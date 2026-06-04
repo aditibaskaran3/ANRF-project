@@ -17,17 +17,21 @@ export default function Navbar({
   const [facultyEmail, setFacultyEmail] = useState("");
 
   useEffect(() => {
-    const email = localStorage.getItem("facultyEmail");
+    const email = localStorage.getItem("userEmail");
     if (email) {
       setFacultyEmail(email);
     }
   }, []);
 
   const logoutUser = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("facultyEmail");
-    router.push("/login");
-  };
+  localStorage.removeItem("token");
+  localStorage.removeItem("userEmail");
+  localStorage.removeItem("userRole");
+  localStorage.removeItem("department");
+  localStorage.removeItem("year");
+  localStorage.removeItem("registerNumber");
+  router.push("/login");
+};
 
   const isCreatePage = activeSection === "Create Assessment";
 
