@@ -1,5 +1,6 @@
 import os
-
+from dotenv import load_dotenv
+load_dotenv()
 from langchain_groq import ChatGroq
 
 _api_key = os.environ.get("GROQ_API_KEY")
