@@ -4,8 +4,8 @@ from bson import ObjectId
 
 from datetime import datetime
 
-from database import assessment_collection
-
+# from database import assessment_collection
+from database import db
 router = APIRouter()
 
 
@@ -20,7 +20,7 @@ def create_assessment(data: dict):
 
     if assessment_id:
 
-        assessment_collection.update_one(
+        db.Assessment.update_one(
             {"_id": ObjectId(assessment_id)},
             {"$set": data}
         )
@@ -28,8 +28,34 @@ def create_assessment(data: dict):
         return {
             "message": "Assessment Updated Successfully"
         }
+    result = db.Assessment.insert_one(data)
+    assessment_id = result.inserted_id
+    assessment_id_str = str(assessment_id)
 
-    result = assessment_collection.insert_one(data)
+    for idx, q in enumerate(data["questions"]):
+        qid = q.get("question_id")
+        if qid == "" or qid is None:
+            qid = idx + 1
+
+        db.Question.insert_one({
+            "assessment_id": assessment_id_str,
+            "question_id": qid,
+            "question_text": q["question"],
+            "max_marks": q["marks"],
+            "ans_length": q["expected_length"],
+        })
+
+        db.AnswerKey.insert_one({
+            "question_id": qid,
+            "key_text": q["answer_key"],
+        })
+
+        db.Rubric.insert_one({
+            "question_id": qid,
+            "rubric_text": q["rubric"],
+        })
+
+    
 
     return {
         "message": "Assessment Created Successfully",
@@ -42,7 +68,7 @@ def create_assessment(data: dict):
 def get_all_assessments(faculty_email: str):
 
     assessments = list(
-        assessment_collection.find(
+        db.Assessment.find(
             {
                 "faculty_email": faculty_email
             }
@@ -68,7 +94,7 @@ def get_student_assessments(
     current_time = datetime.now()
 
     assessments = list(
-        assessment_collection.find(
+        db.Assessment.find(
             {
                 "status": "Published"
             }
@@ -138,7 +164,7 @@ def get_assessment(
     assessment_id: str
 ):
 
-    assessment = assessment_collection.find_one(
+    assessment = db.Assessment.find_one(
         {
             "_id": ObjectId(
                 assessment_id
@@ -159,11 +185,46 @@ def get_assessment(
     return assessment
 
 
+# GET QUESTIONS FOR AN ASSESSMENT (from db.Question)
+@router.get("/questions/{assessment_id}")
+def get_assessment_questions(assessment_id: str):
+
+    questions = list(
+        db.Question.find({"assessment_id": assessment_id})
+    )
+
+    if not questions:
+        assessment = db.Assessment.find_one(
+            {"_id": ObjectId(assessment_id)}
+        )
+        if not assessment:
+            return []
+
+        questions = []
+        for idx, q in enumerate(assessment.get("questions", [])):
+            qid = q.get("question_id")
+            if qid == "" or qid is None:
+                qid = idx + 1
+            questions.append({
+                "assessment_id": assessment_id,
+                "question_id": qid,
+                "question_text": q.get("question", ""),
+                "max_marks": q.get("marks", ""),
+                "ans_length": q.get("expected_length", ""),
+            })
+
+    for question in questions:
+        if "_id" in question:
+            question["_id"] = str(question["_id"])
+
+    return questions
+
+
 # DELETE ASSESSMENT
 @router.delete("/delete/{assessment_id}")
 def delete_assessment(assessment_id: str):
 
-    assessment_collection.delete_one(
+    db.Assessment.delete_one(
         {"_id": ObjectId(assessment_id)}
     )
 

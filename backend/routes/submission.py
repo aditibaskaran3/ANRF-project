@@ -1,13 +1,43 @@
-from fastapi import APIRouter
+import logging
+
+from fastapi import APIRouter, HTTPException
 
 from datetime import datetime
+from database import db
+from evaluation.pipeline import evaluate_pipeline
 
-from database import (
-    student_submissions_collection,
-    student_answers_collection
-)
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def resolve_student_id(student_email: str, student_id_from_client: str | None = None) -> str:
+    user = db.users.find_one({"email": student_email})
+    if not user:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    register_number = (user.get("register_number") or "").strip()
+    if not register_number:
+        raise HTTPException(
+            status_code=400,
+            detail="Registration number not found on student profile",
+        )
+
+    if student_id_from_client is not None:
+        client_id = str(student_id_from_client).strip()
+        if client_id and client_id != register_number:
+            raise HTTPException(
+                status_code=400,
+                detail="Student ID does not match registration number on profile",
+            )
+
+    return register_number
+
+
+def normalize_question_id(question_id):
+    if str(question_id).isdigit():
+        return int(question_id)
+    return question_id
 
 
 # SUBMIT ASSESSMENT
@@ -15,7 +45,7 @@ router = APIRouter()
 def submit_assessment(data: dict):
 
     existing_submission = (
-        student_submissions_collection.find_one(
+        db.StudentSubmission.find_one(
             {
                 "assessment_id":
                     data["assessment_id"],
@@ -33,6 +63,11 @@ def submit_assessment(data: dict):
                 "Assessment Already Submitted"
         }
 
+    student_id = resolve_student_id(
+        data["student_email"],
+        data.get("student_id"),
+    )
+
     submission = {
 
         "assessment_id":
@@ -40,6 +75,9 @@ def submit_assessment(data: dict):
 
         "student_email":
             data["student_email"],
+
+        "student_id":
+            student_id,
 
         "submitted_at":
             datetime.now(),
@@ -49,7 +87,7 @@ def submit_assessment(data: dict):
     }
 
     result = (
-        student_submissions_collection.insert_one(
+        db.StudentSubmission.insert_one(
             submission
         )
     )
@@ -63,15 +101,20 @@ def submit_assessment(data: dict):
         {}
     )
 
+    question_ids = []
+
     for question_id, answer_text in answers.items():
 
-        student_answers_collection.insert_one({
+        stored_question_id = normalize_question_id(question_id)
+        question_ids.append(stored_question_id)
 
-            "submission_id":
-                submission_id,
+        db.StudentAnswer.insert_one({
+
+            "student_id":
+                student_id,
 
             "question_id":
-                question_id,
+                stored_question_id,
 
             "answer_text":
                 answer_text,
@@ -82,10 +125,26 @@ def submit_assessment(data: dict):
                 )
         })
 
-    return {
+    scores = None
+    try:
+        scores = evaluate_pipeline(student_id, question_ids)
+    except Exception:
+        logger.exception(
+            "Evaluation failed for student_id=%s question_ids=%s submission=%s",
+            student_id,
+            question_ids,
+            submission_id,
+        )
+
+    response = {
         "message":
-            "Assessment Submitted Successfully"
+            "Assessment Submitted Successfully",
+        "student_id": student_id,
     }
+    if scores is not None:
+        response["scores"] = scores
+
+    return response
 
 
 # GET STUDENT SUBMISSIONS
@@ -96,7 +155,7 @@ def get_student_submissions(
 
     submissions = list(
 
-        student_submissions_collection.find(
+        db.StudentSubmission.find(
             {
                 "student_email":
                     student_email

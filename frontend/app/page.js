@@ -40,7 +40,7 @@ export default function Home() {
   const [showDepartmentDropdown, setShowDepartmentDropdown] = useState(false);
   const [showYearDropdown, setShowYearDropdown] = useState(false);
   const departmentOptions = [
-    "CS",
+    "CSE",
     "IT",
     "AIDS",
     "ECE",
@@ -70,6 +70,7 @@ export default function Home() {
 
   const [questions, setQuestions] = useState([
     {
+      question_id:"",
       question: "",
       answer_key: "",
       rubric: "",
@@ -126,6 +127,7 @@ export default function Home() {
       setQuestions(
         parsedDraft.questions || [
           {
+            question_id:"",
             question: "",
             answer_key: "",
             rubric: "",
@@ -243,6 +245,7 @@ export default function Home() {
     setQuestions([
       ...questions,
       {
+        question_id: questions.length + 1,
         question: "",
         answer_key: "",
         rubric: "",
@@ -294,7 +297,10 @@ export default function Home() {
 
     availableFrom,
     availableTo,
-    questions,
+    questions: questions.map((q, index) => ({
+      ...q,
+      question_id: q.question_id || index + 1,
+    })),
     id: editingAssessmentId,
     status,
     faculty_email: localStorage.getItem("userEmail")
@@ -649,7 +655,7 @@ export default function Home() {
                     <Select
                       isMulti
                       options={[
-                        { value: "CS", label: "CS" },
+                        { value: "CS", label: "CSE" },
                         { value: "IT", label: "IT" },
                         { value: "AIDS", label: "AIDS" },
                         { value: "ECE", label: "ECE" },

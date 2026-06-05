@@ -9,26 +9,36 @@ export default function StudentAssessmentPage() {
   const router = useRouter();
 
   const [assessment, setAssessment] = useState(null);
+  const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   const [answers, setAnswers] = useState({});
 
   useEffect(() => {
-    fetchAssessment();
-  }, []);
+    if (params.id) {
+      fetchAssessment();
+    }
+  }, [params.id]);
 
   const fetchAssessment = async () => {
 
     try {
 
-      const response = await fetch(
-        `http://localhost:8000/assessment/view/${params.id}`
-      );
+      const [assessmentRes, questionsRes] = await Promise.all([
+        fetch(
+          `http://localhost:8000/assessment/view/${params.id}`
+        ),
+        fetch(
+          `http://localhost:8000/assessment/questions/${params.id}`
+        ),
+      ]);
 
-      const data = await response.json();
+      const data = await assessmentRes.json();
+      const questionData = await questionsRes.json();
 
       setAssessment(data);
+      setQuestions(Array.isArray(questionData) ? questionData : []);
 
     } catch (error) {
 
@@ -41,13 +51,13 @@ export default function StudentAssessmentPage() {
   };
 
   const handleAnswerChange = (
-    questionIndex,
+    questionId,
     value
   ) => {
 
     setAnswers((prev) => ({
       ...prev,
-      [questionIndex]: value
+      [String(questionId)]: value
     }));
   };
 
@@ -56,6 +66,15 @@ export default function StudentAssessmentPage() {
     try {
 
       setSubmitting(true);
+
+      const registerNumber = localStorage.getItem("registerNumber");
+
+      if (!registerNumber) {
+        alert(
+          "Registration number not found. Please log in again."
+        );
+        return;
+      }
 
       const response = await fetch(
         "http://localhost:8000/submission/submit",
@@ -74,6 +93,9 @@ export default function StudentAssessmentPage() {
                 "userEmail"
               ),
 
+            student_id:
+              registerNumber,
+
             answers
           })
         }
@@ -81,6 +103,15 @@ export default function StudentAssessmentPage() {
 
       const data =
         await response.json();
+
+      if (!response.ok) {
+        alert(
+          data.detail ||
+          data.message ||
+          "Failed to submit assessment"
+        );
+        return;
+      }
 
       alert(
         data.message ||
@@ -241,11 +272,22 @@ export default function StudentAssessmentPage() {
 
         <div className="space-y-8">
 
-          {assessment.questions?.map(
-            (question, index) => (
+          {(questions.length > 0
+            ? questions
+            : assessment.questions?.map((q, index) => ({
+                question_id: index + 1,
+                question_text: q.question,
+                max_marks: q.marks,
+              })) || []
+          ).map(
+            (question, index) => {
+
+              const questionId = question.question_id ?? index + 1;
+
+              return (
 
               <div
-                key={index}
+                key={questionId}
                 className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm"
               >
 
@@ -256,7 +298,7 @@ export default function StudentAssessmentPage() {
                   </h2>
 
                   <div className="bg-blue-600 text-white px-4 py-2 rounded-xl font-semibold">
-                    {question.marks} Marks
+                    {question.max_marks ?? question.marks} Marks
                   </div>
 
                 </div>
@@ -264,7 +306,7 @@ export default function StudentAssessmentPage() {
                 <div className="mb-6">
 
                   <p className="text-slate-800 text-lg">
-                    {question.question}
+                    {question.question_text ?? question.question}
                   </p>
 
                 </div>
@@ -272,11 +314,11 @@ export default function StudentAssessmentPage() {
                 <textarea
                   rows={8}
                   value={
-                    answers[index] || ""
+                    answers[String(questionId)] || ""
                   }
                   onChange={(e) =>
                     handleAnswerChange(
-                      index,
+                      questionId,
                       e.target.value
                     )
                   }
@@ -286,7 +328,8 @@ export default function StudentAssessmentPage() {
 
               </div>
 
-            )
+            );
+          }
           )}
 
         </div>
