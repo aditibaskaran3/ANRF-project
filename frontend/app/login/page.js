@@ -134,6 +134,7 @@ export default function LoginPage() {
           </div>
 
           {/* LOGIN BUTTON */}
+          {/* LOGIN BUTTON */}
           <button
             type="submit"
             disabled={loading}
@@ -141,6 +142,20 @@ export default function LoginPage() {
           >
             {loading ? "Signing In..." : "Sign In"}
           </button>
+
+          {/* REGISTER LINK */}
+          <div className="text-center mt-4">
+            <p className="text-slate-600">
+              Don't have an account?{" "}
+              <button
+                type="button"
+                onClick={() => router.push("/register")}
+                className="text-blue-600 font-semibold hover:underline"
+              >
+                Create Account
+              </button>
+            </p>
+          </div>
 
 
         </form>
