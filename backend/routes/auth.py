@@ -1,3 +1,5 @@
+import os
+
 from fastapi import APIRouter, HTTPException
 
 from jose import jwt
@@ -12,7 +14,12 @@ from models.user_model import User
 
 router = APIRouter()
 
-SECRET_KEY = "MYSECRETKEY"
+SECRET_KEY = os.environ.get("SECRET_KEY")
+if not SECRET_KEY:
+    raise EnvironmentError(
+        "SECRET_KEY is not set. Copy backend/.env.example to backend/.env "
+        "and add a random secret string for JWT signing."
+    )
 
 ALGORITHM = "HS256"
 
@@ -75,6 +82,27 @@ def register(user: User):
             detail="User already exists"
         )
 
+    role = getattr(user, "role", "student")
+    register_number = (getattr(user, "register_number", "") or "").strip()
+
+    if role == "student":
+        if not register_number:
+            raise HTTPException(
+                status_code=400,
+                detail="Registration number is required for students",
+            )
+
+        existing_register_number = users_collection.find_one({
+            "register_number": register_number,
+            "role": "student",
+        })
+
+        if existing_register_number:
+            raise HTTPException(
+                status_code=400,
+                detail="Registration number already exists",
+            )
+
     hashed_password = hash_password(
         user.password
     )
@@ -85,17 +113,9 @@ def register(user: User):
 
         "password": hashed_password,
 
-        "role": getattr(
-            user,
-            "role",
-            "student"
-        ),
+        "role": role,
 
-        "register_number": getattr(
-            user,
-            "register_number",
-            ""
-        ),
+        "register_number": register_number,
 
         "department": getattr(
             user,

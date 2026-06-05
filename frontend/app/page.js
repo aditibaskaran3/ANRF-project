@@ -27,6 +27,24 @@ export default function Home() {
   const [instructions, setInstructions] = useState("");
   const [selectedDepartments, setSelectedDepartments] = useState([]);
   const [selectedYears, setSelectedYears] = useState([]);
+  const [showDepartmentDropdown, setShowDepartmentDropdown] = useState(false);
+  const [showYearDropdown, setShowYearDropdown] = useState(false);
+  const departmentOptions = [
+    "CSE",
+    "IT",
+    "AIDS",
+    "ECE",
+    "EEE",
+    "MECH",
+    "CIVIL"
+  ];
+
+  const yearOptions = [
+    "1",
+    "2",
+    "3",
+    "4"
+  ];
   const [availableFrom, setAvailableFrom] = useState("");
   const [availableTo, setAvailableTo] = useState("");
   const [showPreview, setShowPreview] = useState(false);
@@ -37,6 +55,7 @@ export default function Home() {
 
   const [questions, setQuestions] = useState([
     {
+      question_id:"",
       question: "",
       answer_key: "",
       rubric: "",
@@ -106,6 +125,7 @@ export default function Home() {
       setQuestions(
         parsedDraft.questions || [
           {
+            question_id:"",
             question: "",
             answer_key: "",
             rubric: "",
@@ -198,17 +218,19 @@ export default function Home() {
 
 
   // ADD QUESTION
-  const addQuestionCard = (index) => {
-    const newQuestion = {
-      question: "",
-      answer_key: "",
-      rubric: "",
-      marks: "",
-      expected_length: ""
-    };
-    const updatedQuestions = [...questions];
-    updatedQuestions.splice(index + 1, 0, newQuestion);
-    setQuestions(updatedQuestions);
+  const addQuestionCard = () => {
+
+    setQuestions([
+      ...questions,
+      {
+        question_id: questions.length + 1,
+        question: "",
+        answer_key: "",
+        rubric: "",
+        marks: "",
+        expected_length: ""
+      }
+    ]);
   };
 
 
@@ -239,7 +261,10 @@ export default function Home() {
     years: selectedYears.map((year) => year.value),
     availableFrom,
     availableTo,
-    questions,
+    questions: questions.map((q, index) => ({
+      ...q,
+      question_id: q.question_id || index + 1,
+    })),
     id: editingAssessmentId,
     status,
     faculty_email: localStorage.getItem("userEmail")
