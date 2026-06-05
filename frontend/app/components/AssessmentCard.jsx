@@ -1,14 +1,17 @@
 "use client";
 
 import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
 
 export default function AssessmentCard({
   assessment,
   fetchAssessments,
+  fetchSubmissions,
   setTitle,
   setQuestions,
   setEditingAssessmentId,
   setActiveSection,
+  setSelectedAssessmentId,
   setSubjectCode,
   setSubjectName,
   setExamDate,
@@ -17,6 +20,8 @@ export default function AssessmentCard({
   setSelectedDepartments,
   setSelectedYears
 }) {
+
+  const router = useRouter();
 
   // LOAD DRAFT FOR EDITING
   const continueEditing = () => {
@@ -256,12 +261,35 @@ export default function AssessmentCard({
         )}
 
         {isPublished && (
-          <button
-            onClick={duplicateAssessment}
-            className="w-full bg-slate-900 hover:bg-slate-700 transition text-white py-3.5 rounded-xl font-semibold text-sm"
-          >
-            Duplicate Assessment
-          </button>
+          <>
+            <button
+              onClick={duplicateAssessment}
+              className="w-full bg-slate-900 hover:bg-slate-700 transition text-white py-3.5 rounded-xl font-semibold text-sm"
+            >
+              Duplicate Assessment
+            </button>
+
+            <button
+              onClick={() => {
+
+                setSelectedAssessmentId(
+                  assessment._id
+                );
+
+                fetchSubmissions(
+                  assessment._id
+                );
+
+                setActiveSection(
+                  "Submissions"
+                );
+
+              }}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-semibold text-sm transition"
+            >
+              View Submissions
+            </button>
+          </>
         )}
 
         <button

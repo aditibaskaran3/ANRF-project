@@ -1,7 +1,7 @@
 import logging
 
 from fastapi import APIRouter, HTTPException
-
+from bson import ObjectId
 from datetime import datetime
 from database import db
 from evaluation.pipeline import evaluate_pipeline
@@ -83,7 +83,7 @@ def submit_assessment(data: dict):
             datetime.now(),
 
         "status":
-            "Submitted"
+            "Pending Evaluation"
     }
 
     result = (
@@ -125,26 +125,10 @@ def submit_assessment(data: dict):
                 )
         })
 
-    scores = None
-    try:
-        scores = evaluate_pipeline(student_id, question_ids)
-    except Exception:
-        logger.exception(
-            "Evaluation failed for student_id=%s question_ids=%s submission=%s",
-            student_id,
-            question_ids,
-            submission_id,
-        )
-
-    response = {
-        "message":
-            "Assessment Submitted Successfully",
-        "student_id": student_id,
-    }
-    if scores is not None:
-        response["scores"] = scores
-
-    return response
+    return {
+    "message": "Assessment Submitted Successfully",
+    "student_id": student_id
+}
 
 
 # GET STUDENT SUBMISSIONS
@@ -171,3 +155,146 @@ def get_student_submissions(
         )
 
     return submissions
+
+
+@router.get("/all")
+def get_all_submissions():
+
+    submissions = list(
+        db.StudentSubmission.find()
+    )
+
+    result = []
+
+    for submission in submissions:
+
+        assessment = db.Assessment.find_one(
+            {
+                "_id": ObjectId(
+                    submission["assessment_id"]
+                )
+            }
+        )
+
+        result.append({
+
+            "submission_id":
+                str(submission["_id"]),
+
+            "student_id":
+                submission["student_id"],
+
+            "student_email":
+                submission["student_email"],
+
+            "assessment_id":
+                submission["assessment_id"],
+
+            "assessment_title":
+                assessment["title"]
+                if assessment else "Unknown",
+
+            "submitted_at":
+                submission["submitted_at"],
+
+            "status":
+                submission.get(
+                    "status",
+                    "Pending Evaluation"
+                )
+        })
+
+    return result
+
+@router.get("/assessment/{assessment_id}")
+def get_submissions_by_assessment(
+    assessment_id: str
+):
+
+    submissions = list(
+        db.StudentSubmission.find(
+            {
+                "assessment_id":
+                    assessment_id
+            }
+        )
+    )
+
+    result = []
+
+    for submission in submissions:
+
+        result.append({
+
+            "submission_id":
+                str(submission["_id"]),
+
+            "student_id":
+                submission["student_id"],
+
+            "student_email":
+                submission["student_email"],
+
+            "status":
+                submission.get(
+                    "status",
+                    "Pending Evaluation"
+                ),
+
+            "submitted_at":
+                submission["submitted_at"]
+        })
+
+    return result
+
+
+@router.post("/evaluate/{submission_id}")
+def evaluate_submission(submission_id: str):
+
+    submission = db.StudentSubmission.find_one(
+        {
+            "_id": ObjectId(submission_id)
+        }
+    )
+
+    if not submission:
+        raise HTTPException(
+            status_code=404,
+            detail="Submission not found"
+        )
+
+    assessment_id = submission["assessment_id"]
+
+    questions = list(
+        db.Question.find(
+            {
+                "assessment_id": assessment_id
+            }
+        )
+    )
+
+    question_ids = [
+        q["question_id"]
+        for q in questions
+    ]
+
+    scores = evaluate_pipeline(
+        submission["student_id"],
+        question_ids
+    )
+
+    db.StudentSubmission.update_one(
+        {
+            "_id": ObjectId(submission_id)
+        },
+        {
+            "$set": {
+                "status": "Evaluated"
+            }
+        }
+    )
+
+    return {
+        "message": "Evaluation Completed",
+        "scores": scores
+    }

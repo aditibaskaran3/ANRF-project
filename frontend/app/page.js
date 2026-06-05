@@ -55,7 +55,7 @@ export default function Home() {
 
   const [questions, setQuestions] = useState([
     {
-      question_id:"",
+      question_id: "",
       question: "",
       answer_key: "",
       rubric: "",
@@ -63,6 +63,10 @@ export default function Home() {
       expected_length: ""
     }
   ]);
+  const [selectedAssessmentId, setSelectedAssessmentId] = useState(null);
+  const [assessmentSubmissions, setAssessmentSubmissions] = useState([]);
+  const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+
 
 
   // UNSAVED CHANGES WARNING (browser tab close / refresh)
@@ -79,7 +83,7 @@ export default function Home() {
 
 
   // HANDLE SECTION CHANGE — warns if leaving Create Assessment with unsaved data
- const handleSectionChange = (newSection) => {
+  const handleSectionChange = (newSection) => {
     if (activeSection === "Create Assessment" && newSection !== "Create Assessment") {
       const hasData =
         title.trim() ||
@@ -125,7 +129,7 @@ export default function Home() {
       setQuestions(
         parsedDraft.questions || [
           {
-            question_id:"",
+            question_id: "",
             question: "",
             answer_key: "",
             rubric: "",
@@ -166,6 +170,29 @@ export default function Home() {
     fetchAssessments();
   }, []);
 
+  useEffect(() => {
+
+    const handler = (event) => {
+
+      fetchSubmissions(
+        event.detail
+      );
+
+    };
+
+    window.addEventListener(
+      "loadSubmissions",
+      handler
+    );
+
+    return () =>
+      window.removeEventListener(
+        "loadSubmissions",
+        handler
+      );
+
+  }, []);
+
 
   const fetchAssessments = async () => {
     try {
@@ -182,6 +209,80 @@ export default function Home() {
       setSavedAssessments(sorted);
     } catch (error) {
       console.error(error);
+    }
+  };
+
+  const fetchSubmissions = async (
+    assessmentId
+  ) => {
+
+    try {
+
+      setLoadingSubmissions(true);
+
+      const response = await fetch(
+        `http://localhost:8000/submission/assessment/${assessmentId}`
+      );
+
+      const data = await response.json();
+
+      setAssessmentSubmissions(data);
+
+    } catch (error) {
+
+      console.error(error);
+
+      toast.error(
+        "Failed to load submissions"
+      );
+
+    } finally {
+
+      setLoadingSubmissions(false);
+
+    }
+  };
+
+
+  const evaluateSubmission = async (
+    submissionId
+  ) => {
+
+    try {
+
+      const response = await fetch(
+        `http://localhost:8000/submission/evaluate/${submissionId}`,
+        {
+          method: "POST"
+        }
+      );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.detail ||
+          "Evaluation failed"
+        );
+      }
+
+      alert(
+        "Evaluation Completed"
+      );
+
+      fetchSubmissions(
+        selectedAssessmentId
+      );
+
+    } catch (error) {
+
+      console.error(error);
+
+      alert(
+        "Evaluation Failed"
+      );
+
     }
   };
 
@@ -707,9 +808,11 @@ export default function Home() {
                       key={assessment._id}
                       assessment={assessment}
                       fetchAssessments={fetchAssessments}
+                      fetchSubmissions={fetchSubmissions}
                       setTitle={setTitle}
                       setQuestions={setQuestions}
                       setEditingAssessmentId={setEditingAssessmentId}
+                      setSelectedAssessmentId={setSelectedAssessmentId}
                       setActiveSection={setActiveSection}
                       setSubjectCode={setSubjectCode}
                       setSubjectName={setSubjectName}
@@ -729,6 +832,123 @@ export default function Home() {
           {activeSection === "Analytics" && (
             <div className="space-y-8">
               <AnalyticsChart savedAssessments={savedAssessments} />
+            </div>
+          )}
+
+
+          {/* SUBMISSIONS */}
+          {activeSection === "Submissions" && (
+            <div>
+
+              <div className="mb-8">
+
+                <h2 className="text-4xl font-bold text-slate-900 mb-3">
+                  Student Submissions
+                </h2>
+
+                <p className="text-slate-500 text-lg">
+                  Assessment ID: {selectedAssessmentId}
+                </p>
+
+              </div>
+
+              {loadingSubmissions ? (
+
+                <div className="bg-white rounded-3xl p-8">
+                  Loading submissions...
+                </div>
+
+              ) : (
+
+                <div className="bg-white rounded-3xl shadow-sm overflow-hidden">
+
+                  <table className="w-full">
+
+                    <thead className="bg-slate-100">
+
+                      <tr>
+
+                        <th className="p-4 text-left">
+                          Student ID
+                        </th>
+
+                        <th className="p-4 text-left">
+                          Email
+                        </th>
+
+                        <th className="p-4 text-left">
+                          Status
+                        </th>
+
+                        <th className="p-4 text-left">
+                          Action
+                        </th>
+
+                      </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                      {assessmentSubmissions.map(
+                        (submission) => (
+
+                          <tr
+                            key={submission.submission_id}
+                            className="border-t"
+                          >
+
+                            <td className="p-4">
+                              {submission.student_id}
+                            </td>
+
+                            <td className="p-4">
+                              {submission.student_email}
+                            </td>
+
+                            <td className="p-4">
+                              {submission.status}
+                            </td>
+
+                            <td className="p-4">
+
+                              <button
+                                disabled={
+                                  submission.status ===
+                                  "Evaluated"
+                                }
+                                onClick={() =>
+                                  evaluateSubmission(
+                                    submission.submission_id
+                                  )
+                                }
+                                className={`px-4 py-2 rounded-lg text-white ${submission.status ===
+                                    "Evaluated"
+                                    ? "bg-green-600 cursor-not-allowed"
+                                    : "bg-blue-600 hover:bg-blue-700"
+                                  }`}
+                              >
+                                {submission.status ===
+                                  "Evaluated"
+                                  ? "Evaluated"
+                                  : "Evaluate"}
+                              </button>
+
+                            </td>
+
+                          </tr>
+
+                        )
+                      )}
+
+                    </tbody>
+
+                  </table>
+
+                </div>
+
+              )}
+
             </div>
           )}
 
