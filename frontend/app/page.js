@@ -27,24 +27,6 @@ export default function Home() {
   const [instructions, setInstructions] = useState("");
   const [selectedDepartments, setSelectedDepartments] = useState([]);
   const [selectedYears, setSelectedYears] = useState([]);
-  const [showDepartmentDropdown, setShowDepartmentDropdown] = useState(false);
-  const [showYearDropdown, setShowYearDropdown] = useState(false);
-  const departmentOptions = [
-    "CSE",
-    "IT",
-    "AIDS",
-    "ECE",
-    "EEE",
-    "MECH",
-    "CIVIL"
-  ];
-
-  const yearOptions = [
-    "1",
-    "2",
-    "3",
-    "4"
-  ];
   const [availableFrom, setAvailableFrom] = useState("");
   const [availableTo, setAvailableTo] = useState("");
   const [showPreview, setShowPreview] = useState(false);
@@ -52,6 +34,9 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState("");
   const [editingAssessmentId, setEditingAssessmentId] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [selectedAssessmentId, setSelectedAssessmentId] = useState(null);
+  const [assessmentSubmissions, setAssessmentSubmissions] = useState([]);
+  const [loadingSubmissions, setLoadingSubmissions] = useState(false);
 
   const [questions, setQuestions] = useState([
     {
@@ -63,10 +48,6 @@ export default function Home() {
       expected_length: ""
     }
   ]);
-  const [selectedAssessmentId, setSelectedAssessmentId] = useState(null);
-  const [assessmentSubmissions, setAssessmentSubmissions] = useState([]);
-  const [loadingSubmissions, setLoadingSubmissions] = useState(false);
-
 
 
   // UNSAVED CHANGES WARNING (browser tab close / refresh)
@@ -94,10 +75,14 @@ export default function Home() {
           "You have unsaved changes. Leave without saving?"
         );
         if (!choice) return;
+        // User confirmed leaving — clear everything
+        resetFields();
+        localStorage.removeItem("assessmentDraft");
       }
     }
     setActiveSection(newSection);
   };
+
 
   // AUTH CHECK
   useEffect(() => {
@@ -144,8 +129,11 @@ export default function Home() {
   }, []);
 
 
-  // AUTOSAVE
+  // AUTOSAVE — only saves when there is actual content
   useEffect(() => {
+    const hasContent = title.trim() || questions.some((q) => q.question?.trim());
+    if (!hasContent) return;
+
     localStorage.setItem(
       "assessmentDraft",
       JSON.stringify({
@@ -171,26 +159,11 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-
     const handler = (event) => {
-
-      fetchSubmissions(
-        event.detail
-      );
-
+      fetchSubmissions(event.detail);
     };
-
-    window.addEventListener(
-      "loadSubmissions",
-      handler
-    );
-
-    return () =>
-      window.removeEventListener(
-        "loadSubmissions",
-        handler
-      );
-
+    window.addEventListener("loadSubmissions", handler);
+    return () => window.removeEventListener("loadSubmissions", handler);
   }, []);
 
 
@@ -212,77 +185,39 @@ export default function Home() {
     }
   };
 
-  const fetchSubmissions = async (
-    assessmentId
-  ) => {
 
+  const fetchSubmissions = async (assessmentId) => {
     try {
-
       setLoadingSubmissions(true);
-
       const response = await fetch(
         `http://localhost:8000/submission/assessment/${assessmentId}`
       );
-
       const data = await response.json();
-
       setAssessmentSubmissions(data);
-
     } catch (error) {
-
       console.error(error);
-
-      toast.error(
-        "Failed to load submissions"
-      );
-
+      toast.error("Failed to load submissions");
     } finally {
-
       setLoadingSubmissions(false);
-
     }
   };
 
 
-  const evaluateSubmission = async (
-    submissionId
-  ) => {
-
+  const evaluateSubmission = async (submissionId) => {
     try {
-
       const response = await fetch(
         `http://localhost:8000/submission/evaluate/${submissionId}`,
-        {
-          method: "POST"
-        }
+        { method: "POST" }
       );
-
-      const data =
-        await response.json();
-
+      const data = await response.json();
       if (!response.ok) {
-        throw new Error(
-          data.detail ||
-          "Evaluation failed"
-        );
+        throw new Error(data.detail || "Evaluation failed");
       }
-
-      alert(
-        "Evaluation Completed"
-      );
-
-      fetchSubmissions(
-        selectedAssessmentId
-      );
-
+      alert("Evaluation Completed");
+      fetchSubmissions(selectedAssessmentId);
     } catch (error) {
-
       console.error(error);
-
-      alert(
-        "Evaluation Failed"
-      );
-
+      alert("Evaluation Failed");
     }
   };
 
@@ -300,6 +235,7 @@ export default function Home() {
     setAvailableFrom("");
     setAvailableTo("");
     setQuestions([{
+      question_id: "",
       question: "",
       answer_key: "",
       rubric: "",
@@ -312,26 +248,31 @@ export default function Home() {
 
   // CREATE NEW ASSESSMENT
   const createNewAssessment = () => {
+    const hasData = title.trim() || questions.some((q) => q.question?.trim());
+    if (hasData) {
+      const choice = window.confirm("You have unsaved changes. Leave without saving?");
+      if (!choice) return;
+    }
     resetFields();
+    localStorage.removeItem("assessmentDraft");
     setActiveSection("Create Assessment");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
 
-  // ADD QUESTION
-  const addQuestionCard = () => {
-
-    setQuestions([
-      ...questions,
-      {
-        question_id: questions.length + 1,
-        question: "",
-        answer_key: "",
-        rubric: "",
-        marks: "",
-        expected_length: ""
-      }
-    ]);
+  // ADD QUESTION — inserts after current index
+  const addQuestionCard = (index) => {
+    const newQuestion = {
+      question_id: "",
+      question: "",
+      answer_key: "",
+      rubric: "",
+      marks: "",
+      expected_length: ""
+    };
+    const updatedQuestions = [...questions];
+    updatedQuestions.splice(index + 1, 0, newQuestion);
+    setQuestions(updatedQuestions);
   };
 
 
@@ -644,7 +585,8 @@ export default function Home() {
                       type="date"
                       className="w-full border border-slate-200 bg-slate-50 p-5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition text-slate-700"
                       value={examDate}
-                      onChange={(e) => setExamDate(e.target.value)}
+                     onChange={(e) => setExamDate(e.target.value)}
+onKeyDown={(e) => e.preventDefault()}
                     />
                   </div>
                   <div>
@@ -671,6 +613,7 @@ export default function Home() {
                       type="datetime-local"
                       value={availableFrom}
                       onChange={(e) => setAvailableFrom(e.target.value)}
+onKeyDown={(e) => e.preventDefault()}
                       className="w-full border border-slate-200 bg-slate-50 p-5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition"
                     />
                   </div>
@@ -682,6 +625,7 @@ export default function Home() {
                       type="datetime-local"
                       value={availableTo}
                       onChange={(e) => setAvailableTo(e.target.value)}
+onKeyDown={(e) => e.preventDefault()}
                       className="w-full border border-slate-200 bg-slate-50 p-5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition"
                     />
                   </div>
@@ -782,6 +726,8 @@ export default function Home() {
                       setInstructions={setInstructions}
                       setSelectedDepartments={setSelectedDepartments}
                       setSelectedYears={setSelectedYears}
+                      setAvailableFrom={setAvailableFrom}
+                      setAvailableTo={setAvailableTo}
                     />
                   ))}
               </div>
@@ -821,6 +767,8 @@ export default function Home() {
                       setInstructions={setInstructions}
                       setSelectedDepartments={setSelectedDepartments}
                       setSelectedYears={setSelectedYears}
+                      setAvailableFrom={setAvailableFrom}
+                      setAvailableTo={setAvailableTo}
                     />
                   ))}
               </div>
@@ -839,116 +787,55 @@ export default function Home() {
           {/* SUBMISSIONS */}
           {activeSection === "Submissions" && (
             <div>
-
               <div className="mb-8">
-
                 <h2 className="text-4xl font-bold text-slate-900 mb-3">
                   Student Submissions
                 </h2>
-
                 <p className="text-slate-500 text-lg">
                   Assessment ID: {selectedAssessmentId}
                 </p>
-
               </div>
 
               {loadingSubmissions ? (
-
                 <div className="bg-white rounded-3xl p-8">
                   Loading submissions...
                 </div>
-
               ) : (
-
                 <div className="bg-white rounded-3xl shadow-sm overflow-hidden">
-
                   <table className="w-full">
-
                     <thead className="bg-slate-100">
-
                       <tr>
-
-                        <th className="p-4 text-left">
-                          Student ID
-                        </th>
-
-                        <th className="p-4 text-left">
-                          Email
-                        </th>
-
-                        <th className="p-4 text-left">
-                          Status
-                        </th>
-
-                        <th className="p-4 text-left">
-                          Action
-                        </th>
-
+                        <th className="p-4 text-left">Student ID</th>
+                        <th className="p-4 text-left">Email</th>
+                        <th className="p-4 text-left">Status</th>
+                        <th className="p-4 text-left">Action</th>
                       </tr>
-
                     </thead>
-
                     <tbody>
-
-                      {assessmentSubmissions.map(
-                        (submission) => (
-
-                          <tr
-                            key={submission.submission_id}
-                            className="border-t"
-                          >
-
-                            <td className="p-4">
-                              {submission.student_id}
-                            </td>
-
-                            <td className="p-4">
-                              {submission.student_email}
-                            </td>
-
-                            <td className="p-4">
-                              {submission.status}
-                            </td>
-
-                            <td className="p-4">
-
-                              <button
-                                disabled={
-                                  submission.status ===
-                                  "Evaluated"
-                                }
-                                onClick={() =>
-                                  evaluateSubmission(
-                                    submission.submission_id
-                                  )
-                                }
-                                className={`px-4 py-2 rounded-lg text-white ${submission.status ===
-                                    "Evaluated"
-                                    ? "bg-green-600 cursor-not-allowed"
-                                    : "bg-blue-600 hover:bg-blue-700"
-                                  }`}
-                              >
-                                {submission.status ===
-                                  "Evaluated"
-                                  ? "Evaluated"
-                                  : "Evaluate"}
-                              </button>
-
-                            </td>
-
-                          </tr>
-
-                        )
-                      )}
-
+                      {assessmentSubmissions.map((submission) => (
+                        <tr key={submission.submission_id} className="border-t">
+                          <td className="p-4">{submission.student_id}</td>
+                          <td className="p-4">{submission.student_email}</td>
+                          <td className="p-4">{submission.status}</td>
+                          <td className="p-4">
+                            <button
+                              disabled={submission.status === "Evaluated"}
+                              onClick={() => evaluateSubmission(submission.submission_id)}
+                              className={`px-4 py-2 rounded-lg text-white ${
+                                submission.status === "Evaluated"
+                                  ? "bg-green-600 cursor-not-allowed"
+                                  : "bg-blue-600 hover:bg-blue-700"
+                              }`}
+                            >
+                              {submission.status === "Evaluated" ? "Evaluated" : "Evaluate"}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
-
                   </table>
-
                 </div>
-
               )}
-
             </div>
           )}
 

@@ -12,7 +12,6 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // ✅ FIX: Clear any previous session so login is always required
   useEffect(() => {
     localStorage.removeItem("token");
     localStorage.removeItem("userRole");
@@ -44,16 +43,23 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        toast.error(data.detail || "Login failed");
+        const msg = (data.detail || "").toLowerCase();
+        if (msg.includes("email")) {
+          toast.error("Invalid email address");
+        } else if (msg.includes("password")) {
+          toast.error("Invalid password");
+        } else {
+          toast.error("Invalid email or password");
+        }
         return;
       }
 
       localStorage.setItem("token", data.access_token);
       localStorage.setItem("userRole", data.role);
       localStorage.setItem("userEmail", email);
-      localStorage.setItem("department", data.department);
-      localStorage.setItem("year", data.year);
-      localStorage.setItem("registerNumber", data.register_number);
+      if (data.department) localStorage.setItem("department", data.department);
+      if (data.year) localStorage.setItem("year", data.year);
+      if (data.register_number) localStorage.setItem("registerNumber", data.register_number);
 
       toast.success("Login successful");
 
@@ -68,7 +74,7 @@ export default function LoginPage() {
       }
     } catch (error) {
       console.error(error);
-      toast.error("Login failed");
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -77,6 +83,7 @@ export default function LoginPage() {
   return (
     <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-100 via-slate-50 to-slate-200 flex items-center justify-center px-4">
       <div className="w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-slate-200 p-8">
+
         {/* HEADER */}
         <div className="text-center mb-6">
           <div className="text-6xl mb-3">🔐</div>
@@ -86,6 +93,7 @@ export default function LoginPage() {
 
         {/* FORM */}
         <form onSubmit={loginUser} className="space-y-4">
+
           {/* EMAIL */}
           <div>
             <label className="block font-semibold text-slate-700 mb-1">
@@ -134,29 +142,22 @@ export default function LoginPage() {
           </div>
 
           {/* LOGIN BUTTON */}
-          {/* LOGIN BUTTON */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white py-3 rounded-xl text-lg font-semibold shadow-lg hover:opacity-90 transition-all"
+            className="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white py-3 rounded-xl text-lg font-semibold shadow-lg hover:opacity-90 transition-all mt-6"
           >
             {loading ? "Signing In..." : "Sign In"}
           </button>
-
-          {/* REGISTER LINK */}
-          <div className="text-center mt-4">
-            <p className="text-slate-600">
-              Don't have an account?{" "}
-              <button
-                type="button"
-                onClick={() => router.push("/register")}
-                className="text-blue-600 font-semibold hover:underline"
-              >
-                Create Account
-              </button>
-            </p>
-          </div>
-
+          <p className="text-center text-slate-600 text-sm mt-2">
+  New student?{" "}
+  <span
+    onClick={() => router.push("/student/register")}
+    className="text-blue-600 font-semibold cursor-pointer hover:underline"
+  >
+    Create Account
+  </span>
+</p>
 
         </form>
       </div>

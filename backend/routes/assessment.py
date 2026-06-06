@@ -231,3 +231,10 @@ def delete_assessment(assessment_id: str):
     return {
         "message": "Assessment Deleted Successfully"
     }
+# GET ALL ASSESSMENTS FOR ADMIN
+@router.get("/admin/all")
+def get_all_assessments_admin():
+    assessments = list(db.Assessment.find())
+    for a in assessments:
+        a["_id"] = str(a["_id"])
+    return assessments
