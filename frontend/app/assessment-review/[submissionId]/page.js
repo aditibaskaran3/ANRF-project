@@ -11,6 +11,9 @@ export default function AssessmentReviewPage() {
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [facultyMarks, setFacultyMarks] = useState({});
+  const [editingMarks, setEditingMarks] = useState({});
+
   useEffect(() => {
     fetchReview();
   }, []);
@@ -38,14 +41,20 @@ export default function AssessmentReviewPage() {
     }
   };
 
-  const totalMarks = questions.reduce(
-    (sum, q) => sum + Number(q.ai_marks || 0),
+  const finalTotal = questions.reduce(
+    (sum, q) =>
+      sum +
+      Number(
+        facultyMarks[q.question_id] ??
+        q.ai_marks ??
+        0
+      ),
     0
   );
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-xl">
+      <div className="min-h-screen flex items-center justify-center">
         Loading...
       </div>
     );
@@ -53,9 +62,9 @@ export default function AssessmentReviewPage() {
 
   return (
 
-    <div className="min-h-screen bg-slate-100 p-10">
+    <div className="min-h-screen bg-[#f5f7fb] p-8">
 
-      <h1 className="text-4xl font-bold text-slate-900 mb-10">
+      <h1 className="text-3xl font-bold text-slate-900 mb-8">
         Assessment Review
       </h1>
 
@@ -63,62 +72,118 @@ export default function AssessmentReviewPage() {
 
         <div
           key={index}
-          className="bg-white rounded-3xl shadow-lg border border-slate-200 p-8 mb-8"
+          className="bg-white rounded-xl shadow border border-slate-200 p-6 mb-6"
         >
 
-          <h2 className="text-2xl font-bold text-blue-700 mb-8">
-            Question {q.question_id}
-          </h2>
+          <div className="flex justify-between items-center border-b pb-4 mb-5">
 
-          <div className="mb-8">
+            <h2 className="text-xl font-bold text-slate-900">
+              Question {q.question_id}
+            </h2>
 
-            <h3 className="font-bold text-lg text-slate-900 mb-2">
+            <div className="bg-[#071330] text-white px-4 py-2 rounded-lg text-sm font-semibold">
+              Max Marks : {q.max_marks}
+            </div>
+
+          </div>
+
+          <div className="mb-5">
+
+            <h3 className="font-semibold text-slate-800 mb-2">
               Question
             </h3>
 
-            <p className="text-slate-700">
+            <p className="text-slate-700 leading-7">
               {q.question}
             </p>
 
           </div>
 
-          <div className="mb-8">
+          <div className="mb-5">
 
-            <h3 className="font-bold text-lg text-slate-900 mb-2">
-              Maximum Marks
-            </h3>
-
-            <p className="text-slate-700 text-lg">
-              {q.max_marks}
-            </p>
-
-          </div>
-
-          <div className="mb-8">
-
-            <h3 className="font-bold text-lg text-slate-900 mb-2">
+            <h3 className="font-semibold text-slate-800 mb-2">
               Student Answer
             </h3>
 
-            <p className="text-slate-700 whitespace-pre-wrap leading-8">
+            <p className="text-slate-700 leading-8 whitespace-pre-wrap">
               {q.student_answer}
             </p>
 
           </div>
 
-          <div className="border-t pt-6 flex items-center">
+          <div className="border-t pt-4">
 
-            <span className="font-semibold text-slate-800 text-lg">
-              AI Marks :
-            </span>
+            <div className="flex items-center gap-4 flex-wrap">
 
-            <span className="ml-3 bg-green-100 text-green-700 px-4 py-2 rounded-xl font-bold text-xl">
-              {q.ai_marks}
-            </span>
+              <span className="font-semibold text-slate-800">
+                AI Marks
+              </span>
 
-            <span className="ml-2 text-slate-600">
-              / {q.max_marks}
-            </span>
+              <span className="bg-green-100 text-green-700 px-4 py-2 rounded-lg font-bold">
+                {q.ai_marks}
+              </span>
+
+              <span className="text-slate-500">
+                / {q.max_marks}
+              </span>
+
+              {!editingMarks[q.question_id] ? (
+
+                <button
+                  onClick={() =>
+                    setEditingMarks({
+                      ...editingMarks,
+                      [q.question_id]: true
+                    })
+                  }
+                  className="bg-[#1089d3] hover:bg-[#0d78bb] text-white px-4 py-2 rounded-lg text-sm"
+                >
+                  Edit Marks
+                </button>
+
+              ) : (
+
+                <div className="flex items-center gap-3">
+
+                  <span className="font-semibold text-slate-800">
+                    Faculty Marks
+                  </span>
+
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max={q.max_marks}
+                    value={
+                      facultyMarks[q.question_id] ??
+                      q.ai_marks
+                    }
+                    onChange={(e) =>
+                      setFacultyMarks({
+                        ...facultyMarks,
+                        [q.question_id]: e.target.value
+                      })
+                    }
+                    className="border-2 border-slate-300 rounded-lg px-3 py-2 w-24 bg-white text-slate-900 font-semibold"
+                  />
+
+                  <button
+                    onClick={() =>
+                      setEditingMarks({
+                        ...editingMarks,
+                        [q.question_id]: false
+                      })
+                    }
+                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm"
+                  >
+                    Save
+                  </button>
+
+                </div>
+
+              )}
+
+            </div>
 
           </div>
 
@@ -126,15 +191,29 @@ export default function AssessmentReviewPage() {
 
       ))}
 
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-3xl shadow-lg p-8 text-white">
+      <div className="bg-[#071330] text-white rounded-xl shadow p-5">
 
-        <h2 className="text-3xl font-bold">
-          Total AI Marks
-        </h2>
+        <div className="flex justify-between items-center">
 
-        <p className="text-6xl font-bold mt-4">
-          {totalMarks.toFixed(2)}
-        </p>
+          <div>
+
+            <p className="text-sm text-slate-300">
+              Final Assessment Marks
+            </p>
+
+            <p className="text-2xl font-bold mt-1">
+              {Math.round(finalTotal)}
+            </p>
+
+          </div>
+
+          <button
+            className="bg-[#1089d3] hover:bg-[#0d78bb] text-white px-6 py-3 rounded-lg font-semibold"
+          >
+            Finalize Evaluation
+          </button>
+
+        </div>
 
       </div>
 

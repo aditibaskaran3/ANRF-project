@@ -419,3 +419,25 @@ def evaluate_submission(submission_id: str):
         "message": "Evaluation Completed",
         "scores": scores
     }
+
+@router.post("/save-correction")
+def save_correction(data: dict):
+
+    db.FacultyCorrection.update_one(
+        {
+            "submission_id": data["submission_id"],
+            "question_id": data["question_id"]
+        },
+        {
+            "$set": {
+                "ai_marks": data["ai_marks"],
+                "faculty_marks": data["faculty_marks"],
+                "approved": True
+            }
+        },
+        upsert=True
+    )
+
+    return {
+        "message": "Marks Saved Successfully"
+    }
