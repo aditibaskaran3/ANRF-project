@@ -247,6 +247,127 @@ def get_submissions_by_assessment(
 
     return result
 
+@router.get("/view/{submission_id}")
+def view_submission(
+    submission_id: str
+):
+
+    submission = db.StudentSubmission.find_one(
+        {
+            "_id": ObjectId(submission_id)
+        }
+    )
+
+    if not submission:
+        raise HTTPException(
+            status_code=404,
+            detail="Submission not found"
+        )
+
+    student_id = submission["student_id"]
+
+    answers = list(
+        db.StudentAnswer.find(
+            {
+                "student_id": student_id
+            }
+        )
+    )
+
+    result = []
+
+    for answer in answers:
+
+        result.append({
+
+            "question_id":
+                answer["question_id"],
+
+            "answer":
+                answer["answer_text"]
+
+        })
+
+    return result
+
+
+@router.get("/review/{submission_id}")
+def review_submission(
+    submission_id: str
+):
+
+    submission = db.StudentSubmission.find_one(
+        {
+            "_id": ObjectId(submission_id)
+        }
+    )
+
+    if not submission:
+        raise HTTPException(
+            status_code=404,
+            detail="Submission not found"
+        )
+
+    assessment_id = submission["assessment_id"]
+    student_id = submission["student_id"]
+
+    questions = list(
+        db.Question.find(
+            {
+                "assessment_id": assessment_id
+            }
+        )
+    )
+
+    result = []
+
+    for question in questions:
+
+        answer = db.StudentAnswer.find_one(
+            {
+                "student_id": student_id,
+                "question_id": question["question_id"]
+            }
+        )
+
+        evaluation = db.EvaluationResult.find_one(
+            {
+                "student_id": student_id,
+                "question_id": question["question_id"]
+            }
+        )
+
+        result.append({
+
+                    "question_id":
+                        question["question_id"],
+
+                    "question":
+            question.get(
+                "question_text",
+                ""
+            ),
+
+        "max_marks":
+            question.get(
+                "max_marks",
+                0
+            ),
+
+            "student_answer":
+                answer["answer_text"]
+                if answer else "",
+
+            "ai_marks":
+                evaluation.get(
+                    "suggested_marks",
+                    0
+                )
+                if evaluation else 0
+        })
+
+    return result
+
 
 @router.post("/evaluate/{submission_id}")
 def evaluate_submission(submission_id: str):

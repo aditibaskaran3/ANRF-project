@@ -66,6 +66,8 @@ export default function Home() {
   const [selectedAssessmentId, setSelectedAssessmentId] = useState(null);
   const [assessmentSubmissions, setAssessmentSubmissions] = useState([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+  const [submissionDetails, setSubmissionDetails] = useState([]);
+  const [showSubmissionDetails, setShowSubmissionDetails] = useState(false);
 
 
 
@@ -282,6 +284,32 @@ export default function Home() {
       alert(
         "Evaluation Failed"
       );
+
+    }
+  };
+
+
+  const viewSubmission = async (
+    submissionId
+  ) => {
+
+    try {
+
+      const response = await fetch(
+        `http://localhost:8000/submission/view/${submissionId}`
+      );
+
+      const data = await response.json();
+
+      setSubmissionDetails(data);
+
+      setShowSubmissionDetails(true);
+
+    } catch (error) {
+
+      console.error(error);
+
+      alert("Failed to load submission");
 
     }
   };
@@ -839,116 +867,81 @@ export default function Home() {
           {/* SUBMISSIONS */}
           {activeSection === "Submissions" && (
             <div>
-
               <div className="mb-8">
-
                 <h2 className="text-4xl font-bold text-slate-900 mb-3">
                   Student Submissions
                 </h2>
-
                 <p className="text-slate-500 text-lg">
                   Assessment ID: {selectedAssessmentId}
                 </p>
-
               </div>
 
               {loadingSubmissions ? (
-
                 <div className="bg-white rounded-3xl p-8">
                   Loading submissions...
                 </div>
-
               ) : (
-
-                <div className="bg-white rounded-3xl shadow-sm overflow-hidden">
-
-                  <table className="w-full">
-
-                    <thead className="bg-slate-100">
-
-                      <tr>
-
-                        <th className="p-4 text-left">
-                          Student ID
-                        </th>
-
-                        <th className="p-4 text-left">
-                          Email
-                        </th>
-
-                        <th className="p-4 text-left">
-                          Status
-                        </th>
-
-                        <th className="p-4 text-left">
-                          Action
-                        </th>
-
-                      </tr>
-
-                    </thead>
-
-                    <tbody>
-
-                      {assessmentSubmissions.map(
-                        (submission) => (
-
-                          <tr
-                            key={submission.submission_id}
-                            className="border-t"
-                          >
-
+                <>
+                  <div className="bg-white rounded-3xl shadow-sm overflow-hidden">
+                    <table className="w-full">
+                      <thead className="bg-slate-100">
+                        <tr>
+                          <th className="p-4 text-left">Student ID</th>
+                          <th className="p-4 text-left">Email</th>
+                          <th className="p-4 text-left">Status</th>
+                          <th className="p-4 text-left">View</th>
+                          <th className="p-4 text-left">Evaluate</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {assessmentSubmissions.map((submission) => (
+                          <tr key={submission.submission_id} className="border-t">
+                            <td className="p-4">{submission.student_id}</td>
+                            <td className="p-4">{submission.student_email}</td>
+                            <td className="p-4">{submission.status}</td>
                             <td className="p-4">
-                              {submission.student_id}
-                            </td>
-
-                            <td className="p-4">
-                              {submission.student_email}
-                            </td>
-
-                            <td className="p-4">
-                              {submission.status}
-                            </td>
-
-                            <td className="p-4">
-
                               <button
-                                disabled={
-                                  submission.status ===
-                                  "Evaluated"
-                                }
                                 onClick={() =>
-                                  evaluateSubmission(
-                                    submission.submission_id
+                                  router.push(
+                                    `/assessment-review/${submission.submission_id}`
                                   )
                                 }
-                                className={`px-4 py-2 rounded-lg text-white ${submission.status ===
-                                    "Evaluated"
+                                className="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded-lg"
+                              >
+                                View
+                              </button>
+                            </td>
+                            <td className="p-4">
+                              <button
+                                disabled={submission.status === "Evaluated"}
+                                onClick={() => evaluateSubmission(submission.submission_id)}
+                                className={`px-4 py-2 rounded-lg text-white ${submission.status === "Evaluated"
                                     ? "bg-green-600 cursor-not-allowed"
                                     : "bg-blue-600 hover:bg-blue-700"
                                   }`}
                               >
-                                {submission.status ===
-                                  "Evaluated"
-                                  ? "Evaluated"
-                                  : "Evaluate"}
+                                {submission.status === "Evaluated" ? "Evaluated" : "Evaluate"}
                               </button>
-
                             </td>
-
                           </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
 
-                        )
-                      )}
-
-                    </tbody>
-
-                  </table>
-
-                </div>
-
+                  {showSubmissionDetails && (
+                    <div className="mt-8 bg-white p-6 rounded-3xl shadow">
+                      <h2 className="text-2xl font-bold mb-6">Submission Details</h2>
+                      {submissionDetails.map((item, index) => (
+                        <div key={index} className="mb-6 border-b pb-4">
+                          <h3 className="font-bold mb-2">Question {item.question_id}</h3>
+                          <p className="text-slate-700 whitespace-pre-wrap">{item.answer}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
-
             </div>
           )}
 
