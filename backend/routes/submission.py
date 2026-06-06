@@ -47,20 +47,15 @@ def submit_assessment(data: dict):
     existing_submission = (
         db.StudentSubmission.find_one(
             {
-                "assessment_id":
-                    data["assessment_id"],
-
-                "student_email":
-                    data["student_email"]
+                "assessment_id": data["assessment_id"],
+                "student_email": data["student_email"]
             }
         )
     )
 
     if existing_submission:
-
         return {
-            "message":
-                "Assessment Already Submitted"
+            "message": "Assessment Already Submitted"
         }
 
     student_id = resolve_student_id(
@@ -69,38 +64,17 @@ def submit_assessment(data: dict):
     )
 
     submission = {
-
-        "assessment_id":
-            data["assessment_id"],
-
-        "student_email":
-            data["student_email"],
-
-        "student_id":
-            student_id,
-
-        "submitted_at":
-            datetime.now(),
-
-        "status":
-            "Pending Evaluation"
+        "assessment_id": data["assessment_id"],
+        "student_email": data["student_email"],
+        "student_id": student_id,
+        "submitted_at": datetime.now(),
+        "status": "Pending Evaluation"
     }
 
-    result = (
-        db.StudentSubmission.insert_one(
-            submission
-        )
-    )
+    result = db.StudentSubmission.insert_one(submission)
+    submission_id = str(result.inserted_id)
 
-    submission_id = str(
-        result.inserted_id
-    )
-
-    answers = data.get(
-        "answers",
-        {}
-    )
-
+    answers = data.get("answers", {})
     question_ids = []
 
     for question_id, answer_text in answers.items():
@@ -108,21 +82,13 @@ def submit_assessment(data: dict):
         stored_question_id = normalize_question_id(question_id)
         question_ids.append(stored_question_id)
 
+        # FIX — save assessment_id with each answer so lookup is unique
         db.StudentAnswer.insert_one({
-
-            "student_id":
-                student_id,
-
-            "question_id":
-                stored_question_id,
-
-            "answer_text":
-                answer_text,
-
-            "word_count":
-                len(
-                    answer_text.split()
-                )
+            "student_id": student_id,
+            "assessment_id": data["assessment_id"],
+            "question_id": stored_question_id,
+            "answer_text": answer_text,
+            "word_count": len(answer_text.split())
         })
 
     return {
@@ -217,9 +183,14 @@ def view_submission(submission_id: str):
         raise HTTPException(status_code=404, detail="Submission not found")
 
     student_id = submission["student_id"]
+    assessment_id = submission["assessment_id"]
 
+    # FIX — filter by assessment_id too
     answers = list(
-        db.StudentAnswer.find({"student_id": student_id})
+        db.StudentAnswer.find({
+            "student_id": student_id,
+            "assessment_id": assessment_id
+        })
     )
 
     result = []
@@ -254,9 +225,11 @@ def review_submission(submission_id: str):
 
     for question in questions:
 
+        # FIX — filter by assessment_id + student_id + question_id
         answer = db.StudentAnswer.find_one(
             {
                 "student_id": student_id,
+                "assessment_id": assessment_id,
                 "question_id": question["question_id"]
             }
         )
@@ -303,7 +276,8 @@ def evaluate_submission(submission_id: str):
 
     scores = evaluate_pipeline(
         submission["student_id"],
-        question_ids
+        question_ids,
+        assessment_id
     )
 
     db.StudentSubmission.update_one(

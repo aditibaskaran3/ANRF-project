@@ -38,22 +38,23 @@ def create_assessment(data: dict):
             qid = idx + 1
 
         db.Question.insert_one({
-            "assessment_id": assessment_id_str,
-            "question_id": qid,
-            "question_text": q["question"],
-            "max_marks": q["marks"],
-            "ans_length": q["expected_length"],
-        })
-
+    "assessment_id": assessment_id_str,
+    "question_id": qid,
+    "question_text": q["question"],
+    "max_marks": int(q["marks"]),
+    "ans_length": q["expected_length"],
+})
         db.AnswerKey.insert_one({
-            "question_id": qid,
-            "key_text": q["answer_key"],
-        })
+        "question_id": qid,
+        "assessment_id": assessment_id_str,
+        "key_text": q["answer_key"],
+})
 
-        db.Rubric.insert_one({
-            "question_id": qid,
-            "rubric_text": q["rubric"],
-        })
+    db.Rubric.insert_one({
+        "question_id": qid,
+        "assessment_id": assessment_id_str,
+        "rubric_text": q["rubric"],
+})
 
     
 

@@ -15,20 +15,28 @@ def _normalize_question_id(question_id):
     return question_id
 
 
-def accessing_student_input(student_id, question_id):
+def accessing_student_input(student_id, question_id, assessment_id):
     question_id = _normalize_question_id(question_id)
 
-    answer_doc = db.StudentAnswer.find_one(
-        {"student_id": student_id, "question_id": question_id}
-    )
+    answer_doc = db.StudentAnswer.find_one({
+        "student_id": student_id,
+        "assessment_id": assessment_id,
+        "question_id": question_id
+    })
     if not answer_doc:
         return
 
-    rubric_doc = db.Rubric.find_one({"question_id": question_id})
+    rubric_doc = db.Rubric.find_one({
+        "question_id": question_id,
+        "assessment_id": assessment_id
+    })
     if not rubric_doc or not rubric_doc.get("verified_points_json"):
         return
 
-    answer_key_doc = db.AnswerKey.find_one({"question_id": question_id})
+    answer_key_doc = db.AnswerKey.find_one({
+        "question_id": question_id,
+        "assessment_id": assessment_id
+    })
     if not answer_key_doc or not answer_key_doc.get("key_text"):
         return
 
@@ -39,11 +47,12 @@ def accessing_student_input(student_id, question_id):
     )
 
     db.EvaluationResult.update_one(
-        {"question_id": question_id, "student_id": student_id},
+        {"question_id": question_id, "student_id": student_id, "assessment_id": assessment_id},
         {
             "$set": {
                 "question_id": question_id,
                 "student_id": student_id,
+                "assessment_id": assessment_id,
                 "labels_json": marks_breakdown,
                 "suggested_marks": None,
                 "audit_json": None,
@@ -54,23 +63,25 @@ def accessing_student_input(student_id, question_id):
     )
 
 
-def evaluate_pipeline(student_id, question_ids):
+def evaluate_pipeline(student_id, question_ids, assessment_id):
     scores_by_question = {}
 
     for raw_question_id in question_ids:
         question_id = _normalize_question_id(raw_question_id)
 
-        accessing_faculty_input(question_id)
-        accessing_student_input(student_id, question_id)
-        similarity_marks(student_id, question_id)
-        access_similarity_for_technical_evaluation(question_id)
-        cal_technical_score(student_id, question_id)
-        normalise_marks(student_id, question_id)
-        final_score_combined(student_id, question_id)
+        accessing_faculty_input(question_id, assessment_id)
+        accessing_student_input(student_id, question_id, assessment_id)
+        similarity_marks(student_id, question_id, assessment_id)
+        access_similarity_for_technical_evaluation(question_id, assessment_id)
+        cal_technical_score(student_id, question_id, assessment_id)
+        normalise_marks(student_id, question_id, assessment_id)
+        final_score_combined(student_id, question_id, assessment_id)
 
-        result = db.EvaluationResult.find_one(
-            {"student_id": student_id, "question_id": question_id}
-        )
+        result = db.EvaluationResult.find_one({
+            "student_id": student_id,
+            "question_id": question_id,
+            "assessment_id": assessment_id
+        })
         if not result:
             continue
 

@@ -182,12 +182,22 @@ export default function AssessmentReviewPage() {
                                                 min="0"
                                                 max={q.max_marks}
                                                 value={facultyMarks[q.question_id] ?? q.ai_marks}
-                                                onChange={(e) =>
-                                                    setFacultyMarks({
-                                                        ...facultyMarks,
-                                                        [q.question_id]: e.target.value
-                                                    })
-                                                }
+                                               onChange={(e) => {
+    const val = parseFloat(e.target.value);
+    if (e.target.value === "") {
+        setFacultyMarks({ ...facultyMarks, [q.question_id]: "" });
+        return;
+    }
+    if (isNaN(val) || val < 0) {
+        alert("Marks cannot be negative");
+        return;
+    }
+    if (val > q.max_marks) {
+        alert(`Marks cannot exceed maximum marks (${q.max_marks})`);
+        return;
+    }
+    setFacultyMarks({ ...facultyMarks, [q.question_id]: val });
+}}
                                                 className="border-2 border-slate-300 rounded-lg px-3 py-2 w-24 bg-white text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-sky-400"
                                             />
                                             <button

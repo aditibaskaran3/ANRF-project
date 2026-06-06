@@ -37,6 +37,7 @@ export default function Home() {
   const [selectedAssessmentId, setSelectedAssessmentId] = useState(null);
   const [assessmentSubmissions, setAssessmentSubmissions] = useState([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+  const [evaluatingSubmission, setEvaluatingSubmission] = useState(null);
 
   const [questions, setQuestions] = useState([
     {
@@ -75,7 +76,6 @@ export default function Home() {
           "You have unsaved changes. Leave without saving?"
         );
         if (!choice) return;
-        // User confirmed leaving — clear everything
         resetFields();
         localStorage.removeItem("assessmentDraft");
       }
@@ -84,10 +84,11 @@ export default function Home() {
   };
 
 
-  // AUTH CHECK
+  // AUTH CHECK — must be faculty role
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) {
+    const role = localStorage.getItem("userRole");
+    if (!token || role !== "faculty") {
       router.push("/login");
     } else {
       setCheckingAuth(false);
@@ -167,6 +168,20 @@ export default function Home() {
   }, []);
 
 
+  // OPEN SUBMISSIONS PAGE AFTER RETURNING FROM REVIEW
+  useEffect(() => {
+    const openSubmissions = localStorage.getItem("openSubmissions");
+    const savedAssessmentId = localStorage.getItem("selectedAssessmentId");
+
+    if (openSubmissions === "true" && savedAssessmentId) {
+      setActiveSection("Submissions");
+      setSelectedAssessmentId(savedAssessmentId);
+      fetchSubmissions(savedAssessmentId);
+      localStorage.removeItem("openSubmissions");
+    }
+  }, []);
+
+
   const fetchAssessments = async () => {
     try {
       const facultyEmail = localStorage.getItem("userEmail");
@@ -204,6 +219,7 @@ export default function Home() {
 
 
   const evaluateSubmission = async (submissionId) => {
+    setEvaluatingSubmission(submissionId);
     try {
       const response = await fetch(
         `http://localhost:8000/submission/evaluate/${submissionId}`,
@@ -218,6 +234,8 @@ export default function Home() {
     } catch (error) {
       console.error(error);
       alert("Evaluation Failed");
+    } finally {
+      setEvaluatingSubmission(null);
     }
   };
 
@@ -585,8 +603,8 @@ export default function Home() {
                       type="date"
                       className="w-full border border-slate-200 bg-slate-50 p-5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition text-slate-700"
                       value={examDate}
-                     onChange={(e) => setExamDate(e.target.value)}
-onKeyDown={(e) => e.preventDefault()}
+                      onChange={(e) => setExamDate(e.target.value)}
+                      onKeyDown={(e) => e.preventDefault()}
                     />
                   </div>
                   <div>
@@ -613,7 +631,7 @@ onKeyDown={(e) => e.preventDefault()}
                       type="datetime-local"
                       value={availableFrom}
                       onChange={(e) => setAvailableFrom(e.target.value)}
-onKeyDown={(e) => e.preventDefault()}
+                      onKeyDown={(e) => e.preventDefault()}
                       className="w-full border border-slate-200 bg-slate-50 p-5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition"
                     />
                   </div>
@@ -625,7 +643,7 @@ onKeyDown={(e) => e.preventDefault()}
                       type="datetime-local"
                       value={availableTo}
                       onChange={(e) => setAvailableTo(e.target.value)}
-onKeyDown={(e) => e.preventDefault()}
+                      onKeyDown={(e) => e.preventDefault()}
                       className="w-full border border-slate-200 bg-slate-50 p-5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition"
                     />
                   </div>
@@ -808,18 +826,43 @@ onKeyDown={(e) => e.preventDefault()}
                         <th className="p-4 text-left">Student ID</th>
                         <th className="p-4 text-left">Email</th>
                         <th className="p-4 text-left">Status</th>
-                        <th className="p-4 text-left">Action</th>
+                        <th className="p-4 text-left">Final Marks</th>
+                        <th className="p-4 text-left">View</th>
+                        <th className="p-4 text-left">Evaluate</th>
                       </tr>
                     </thead>
                     <tbody>
                       {assessmentSubmissions.map((submission) => (
                         <tr key={submission.submission_id} className="border-t">
+
                           <td className="p-4">{submission.student_id}</td>
+
                           <td className="p-4">{submission.student_email}</td>
+
                           <td className="p-4">{submission.status}</td>
+
+                          <td className="p-4 font-semibold text-slate-800">
+                            {submission.final_marks > 0 ? submission.final_marks : "-"}
+                          </td>
+
                           <td className="p-4">
                             <button
-                              disabled={submission.status === "Evaluated"}
+                              onClick={() => {
+                                localStorage.setItem("selectedAssessmentId", selectedAssessmentId);
+                                router.push(`/assessment-review/${submission.submission_id}`);
+                              }}
+                              className="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded-lg transition"
+                            >
+                              View
+                            </button>
+                          </td>
+
+                          <td className="p-4">
+                            <button
+                              disabled={
+                                submission.status === "Evaluated" ||
+                                evaluatingSubmission === submission.submission_id
+                              }
                               onClick={() => evaluateSubmission(submission.submission_id)}
                               className={`px-4 py-2 rounded-lg text-white ${
                                 submission.status === "Evaluated"
@@ -827,9 +870,14 @@ onKeyDown={(e) => e.preventDefault()}
                                   : "bg-blue-600 hover:bg-blue-700"
                               }`}
                             >
-                              {submission.status === "Evaluated" ? "Evaluated" : "Evaluate"}
+                              {evaluatingSubmission === submission.submission_id
+                                ? "Evaluating..."
+                                : submission.status === "Evaluated"
+                                ? "Evaluated"
+                                : "Evaluate"}
                             </button>
                           </td>
+
                         </tr>
                       ))}
                     </tbody>

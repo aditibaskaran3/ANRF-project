@@ -13,6 +13,7 @@ export default function AdminDashboard() {
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [adminEmail, setAdminEmail] = useState("Admin");
 
   // Create faculty form
   const [newEmail, setNewEmail] = useState("");
@@ -26,6 +27,7 @@ export default function AdminDashboard() {
       router.push("/login");
       return;
     }
+    setAdminEmail(localStorage.getItem("userEmail") || "Admin");
     fetchFaculty();
     fetchAssessments();
     fetchSubmissions();
@@ -147,7 +149,7 @@ export default function AdminDashboard() {
         </div>
         <div className="flex items-center gap-4">
           <span className="text-sm text-slate-600 font-medium">
-            {localStorage.getItem?.("userEmail") || "Admin"}
+            {adminEmail}
           </span>
           <button
             onClick={logout}
@@ -231,21 +233,21 @@ export default function AdminDashboard() {
                     Password
                   </label>
                   <div className="relative">
-  <input
-    type={showNewPassword ? "text" : "password"}
-    placeholder="Set a password"
-    value={newPassword}
-    onChange={(e) => setNewPassword(e.target.value)}
-    className="w-full border border-slate-200 bg-slate-50 p-3 pr-11 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-400 text-slate-900"
-  />
-  <button
-    type="button"
-    onClick={() => setShowNewPassword(!showNewPassword)}
-    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500"
-  >
-    {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-  </button>
-</div>
+                    <input
+                      type={showNewPassword ? "text" : "password"}
+                      placeholder="Set a password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full border border-slate-200 bg-slate-50 p-3 pr-11 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-400 text-slate-900"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500"
+                    >
+                      {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
                 </div>
                 <div className="flex items-end">
                   <button
