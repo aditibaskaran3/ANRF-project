@@ -34,6 +34,7 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState("");
   const [editingAssessmentId, setEditingAssessmentId] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [evaluatingSubmission, setEvaluatingSubmission] = useState(null);
 
   const [questions, setQuestions] = useState([
     {
@@ -222,6 +223,9 @@ export default function Home() {
 
 
   const evaluateSubmission = async (submissionId) => {
+
+    setEvaluatingSubmission(submissionId);
+
     try {
       const response = await fetch(
         `http://localhost:8000/submission/evaluate/${submissionId}`,
@@ -234,9 +238,17 @@ export default function Home() {
       alert("Evaluation Completed");
       fetchSubmissions(selectedAssessmentId);
     } catch (error) {
+
       console.error(error);
+
       alert("Evaluation Failed");
+
+    } finally {
+
+      setEvaluatingSubmission(null);
+
     }
+
   };
 
 
@@ -804,14 +816,21 @@ export default function Home() {
 
                             <td className="p-4">
                               <button
-                                disabled={submission.status === "Evaluated"}
+                                disabled={
+                                  submission.status === "Evaluated" ||
+                                  evaluatingSubmission === submission.submission_id
+                                }
                                 onClick={() => evaluateSubmission(submission.submission_id)}
                                 className={`px-4 py-2 rounded-lg text-white ${submission.status === "Evaluated"
                                   ? "bg-green-600 cursor-not-allowed"
                                   : "bg-blue-600 hover:bg-blue-700"
                                   }`}
                               >
-                                {submission.status === "Evaluated" ? "Evaluated" : "Evaluate"}
+                                {evaluatingSubmission === submission.submission_id
+                                  ? "Evaluating..."
+                                  : submission.status === "Evaluated"
+                                    ? "Evaluated"
+                                    : "Evaluate"}
                               </button>
                             </td>
 
