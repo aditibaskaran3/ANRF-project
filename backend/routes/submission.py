@@ -126,135 +126,165 @@ def submit_assessment(data: dict):
         })
 
     return {
-    "message": "Assessment Submitted Successfully",
-    "student_id": student_id
-}
+        "message": "Assessment Submitted Successfully",
+        "student_id": student_id
+    }
 
 
 # GET STUDENT SUBMISSIONS
 @router.get("/student/{student_email}")
-def get_student_submissions(
-    student_email: str
-):
+def get_student_submissions(student_email: str):
 
     submissions = list(
-
         db.StudentSubmission.find(
-            {
-                "student_email":
-                    student_email
-            }
+            {"student_email": student_email}
         )
-
     )
 
     for submission in submissions:
-
-        submission["_id"] = str(
-            submission["_id"]
-        )
+        submission["_id"] = str(submission["_id"])
 
     return submissions
 
 
+# GET ALL SUBMISSIONS
 @router.get("/all")
 def get_all_submissions():
 
-    submissions = list(
-        db.StudentSubmission.find()
-    )
-
+    submissions = list(db.StudentSubmission.find())
     result = []
 
     for submission in submissions:
 
         assessment = db.Assessment.find_one(
-            {
-                "_id": ObjectId(
-                    submission["assessment_id"]
-                )
-            }
+            {"_id": ObjectId(submission["assessment_id"])}
         )
 
         result.append({
-
-            "submission_id":
-                str(submission["_id"]),
-
-            "student_id":
-                submission["student_id"],
-
-            "student_email":
-                submission["student_email"],
-
-            "assessment_id":
-                submission["assessment_id"],
-
-            "assessment_title":
-                assessment["title"]
-                if assessment else "Unknown",
-
-            "submitted_at":
-                submission["submitted_at"],
-
-            "status":
-                submission.get(
-                    "status",
-                    "Pending Evaluation"
-                )
+            "submission_id": str(submission["_id"]),
+            "student_id": submission["student_id"],
+            "student_email": submission["student_email"],
+            "assessment_id": submission["assessment_id"],
+            "assessment_title": assessment["title"] if assessment else "Unknown",
+            "submitted_at": submission["submitted_at"],
+            "status": submission.get("status", "Pending Evaluation")
         })
 
     return result
 
+
+# GET SUBMISSIONS BY ASSESSMENT
 @router.get("/assessment/{assessment_id}")
-def get_submissions_by_assessment(
-    assessment_id: str
-):
+def get_submissions_by_assessment(assessment_id: str):
 
     submissions = list(
-        db.StudentSubmission.find(
-            {
-                "assessment_id":
-                    assessment_id
-            }
-        )
+        db.StudentSubmission.find({"assessment_id": assessment_id})
     )
 
     result = []
 
     for submission in submissions:
 
+        total_marks = 0
+        corrections = list(
+            db.FacultyCorrection.find({"submission_id": str(submission["_id"])})
+        )
+
+        for correction in corrections:
+            total_marks += float(correction.get("faculty_marks", 0))
+
         result.append({
-
-            "submission_id":
-                str(submission["_id"]),
-
-            "student_id":
-                submission["student_id"],
-
-            "student_email":
-                submission["student_email"],
-
-            "status":
-                submission.get(
-                    "status",
-                    "Pending Evaluation"
-                ),
-
-            "submitted_at":
-                submission["submitted_at"]
+            "submission_id": str(submission["_id"]),
+            "student_id": submission["student_id"],
+            "student_email": submission["student_email"],
+            "status": submission.get("status", "Pending Evaluation"),
+            "submitted_at": submission["submitted_at"],
+            "final_marks": round(total_marks)
         })
 
     return result
 
 
+# VIEW SUBMISSION — student answers only
+@router.get("/view/{submission_id}")
+def view_submission(submission_id: str):
+
+    submission = db.StudentSubmission.find_one(
+        {"_id": ObjectId(submission_id)}
+    )
+
+    if not submission:
+        raise HTTPException(status_code=404, detail="Submission not found")
+
+    student_id = submission["student_id"]
+
+    answers = list(
+        db.StudentAnswer.find({"student_id": student_id})
+    )
+
+    result = []
+    for answer in answers:
+        result.append({
+            "question_id": answer["question_id"],
+            "answer": answer["answer_text"]
+        })
+
+    return result
+
+
+# REVIEW SUBMISSION — for faculty review page with AI marks
+@router.get("/review/{submission_id}")
+def review_submission(submission_id: str):
+
+    submission = db.StudentSubmission.find_one(
+        {"_id": ObjectId(submission_id)}
+    )
+
+    if not submission:
+        raise HTTPException(status_code=404, detail="Submission not found")
+
+    assessment_id = submission["assessment_id"]
+    student_id = submission["student_id"]
+
+    questions = list(
+        db.Question.find({"assessment_id": assessment_id})
+    )
+
+    result = []
+
+    for question in questions:
+
+        answer = db.StudentAnswer.find_one(
+            {
+                "student_id": student_id,
+                "question_id": question["question_id"]
+            }
+        )
+
+        evaluation = db.EvaluationResult.find_one(
+            {
+                "student_id": student_id,
+                "question_id": question["question_id"]
+            }
+        )
+
+        result.append({
+            "question_id": question["question_id"],
+            "question": question.get("question_text", ""),
+            "max_marks": question.get("max_marks", 0),
+            "student_answer": answer["answer_text"] if answer else "",
+            "ai_marks": evaluation.get("suggested_marks", 0) if evaluation else 0
+        })
+
+    return result
+
+
+# EVALUATE SUBMISSION — runs ML pipeline
 @router.post("/evaluate/{submission_id}")
 def evaluate_submission(submission_id: str):
 
     submission = db.StudentSubmission.find_one(
-        {
-            "_id": ObjectId(submission_id)
-        }
+        {"_id": ObjectId(submission_id)}
     )
 
     if not submission:
@@ -266,17 +296,10 @@ def evaluate_submission(submission_id: str):
     assessment_id = submission["assessment_id"]
 
     questions = list(
-        db.Question.find(
-            {
-                "assessment_id": assessment_id
-            }
-        )
+        db.Question.find({"assessment_id": assessment_id})
     )
 
-    question_ids = [
-        q["question_id"]
-        for q in questions
-    ]
+    question_ids = [q["question_id"] for q in questions]
 
     scores = evaluate_pipeline(
         submission["student_id"],
@@ -284,17 +307,33 @@ def evaluate_submission(submission_id: str):
     )
 
     db.StudentSubmission.update_one(
-        {
-            "_id": ObjectId(submission_id)
-        },
-        {
-            "$set": {
-                "status": "Evaluated"
-            }
-        }
+        {"_id": ObjectId(submission_id)},
+        {"$set": {"status": "Evaluated"}}
     )
 
     return {
         "message": "Evaluation Completed",
         "scores": scores
     }
+
+
+# SAVE FACULTY CORRECTION
+@router.post("/save-correction")
+def save_correction(data: dict):
+
+    db.FacultyCorrection.update_one(
+        {
+            "submission_id": data["submission_id"],
+            "question_id": data["question_id"]
+        },
+        {
+            "$set": {
+                "ai_marks": data["ai_marks"],
+                "faculty_marks": data["faculty_marks"],
+                "approved": True
+            }
+        },
+        upsert=True
+    )
+
+    return {"message": "Marks Saved Successfully"}
