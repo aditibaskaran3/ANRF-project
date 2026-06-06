@@ -27,24 +27,6 @@ export default function Home() {
   const [instructions, setInstructions] = useState("");
   const [selectedDepartments, setSelectedDepartments] = useState([]);
   const [selectedYears, setSelectedYears] = useState([]);
-  const [showDepartmentDropdown, setShowDepartmentDropdown] = useState(false);
-  const [showYearDropdown, setShowYearDropdown] = useState(false);
-  const departmentOptions = [
-    "CSE",
-    "IT",
-    "AIDS",
-    "ECE",
-    "EEE",
-    "MECH",
-    "CIVIL"
-  ];
-
-  const yearOptions = [
-    "1",
-    "2",
-    "3",
-    "4"
-  ];
   const [availableFrom, setAvailableFrom] = useState("");
   const [availableTo, setAvailableTo] = useState("");
   const [showPreview, setShowPreview] = useState(false);
@@ -63,6 +45,7 @@ export default function Home() {
       expected_length: ""
     }
   ]);
+
   const [selectedAssessmentId, setSelectedAssessmentId] = useState(null);
   const [assessmentSubmissions, setAssessmentSubmissions] = useState([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
@@ -70,8 +53,7 @@ export default function Home() {
   const [showSubmissionDetails, setShowSubmissionDetails] = useState(false);
 
 
-
-  // UNSAVED CHANGES WARNING (browser tab close / refresh)
+  // UNSAVED CHANGES WARNING
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       if (activeSection === "Create Assessment" && title.trim()) {
@@ -84,22 +66,18 @@ export default function Home() {
   }, [activeSection, title]);
 
 
-  // HANDLE SECTION CHANGE — warns if leaving Create Assessment with unsaved data
+  // HANDLE SECTION CHANGE
   const handleSectionChange = (newSection) => {
     if (activeSection === "Create Assessment" && newSection !== "Create Assessment") {
-      const hasData =
-        title.trim() ||
-        questions.some((q) => q.question?.trim());
-
+      const hasData = title.trim() || questions.some((q) => q.question?.trim());
       if (hasData) {
-        const choice = window.confirm(
-          "You have unsaved changes. Leave without saving?"
-        );
+        const choice = window.confirm("You have unsaved changes. Leave without saving?");
         if (!choice) return;
       }
     }
     setActiveSection(newSection);
   };
+
 
   // AUTH CHECK
   useEffect(() => {
@@ -130,14 +108,7 @@ export default function Home() {
       setAvailableTo(parsedDraft.availableTo || "");
       setQuestions(
         parsedDraft.questions || [
-          {
-            question_id: "",
-            question: "",
-            answer_key: "",
-            rubric: "",
-            marks: "",
-            expected_length: ""
-          }
+          { question_id: "", question: "", answer_key: "", rubric: "", marks: "", expected_length: "" }
         ]
       );
       if (parsedDraft.selectedDepartments) setSelectedDepartments(parsedDraft.selectedDepartments);
@@ -151,17 +122,8 @@ export default function Home() {
     localStorage.setItem(
       "assessmentDraft",
       JSON.stringify({
-        title,
-        subjectCode,
-        subjectName,
-        examDate,
-        duration,
-        instructions,
-        availableFrom,
-        availableTo,
-        questions,
-        selectedDepartments,
-        selectedYears
+        title, subjectCode, subjectName, examDate, duration, instructions,
+        availableFrom, availableTo, questions, selectedDepartments, selectedYears
       })
     );
   }, [title, subjectCode, subjectName, examDate, duration, instructions, availableFrom, availableTo, questions, selectedDepartments, selectedYears]);
@@ -172,26 +134,57 @@ export default function Home() {
     fetchAssessments();
   }, []);
 
+
+  // LOAD SUBMISSIONS EVENT
+  useEffect(() => {
+    const handler = (event) => {
+      fetchSubmissions(event.detail);
+    };
+    window.addEventListener("loadSubmissions", handler);
+    return () => window.removeEventListener("loadSubmissions", handler);
+  }, []);
+
+
+  // REFETCH SUBMISSIONS WHEN RETURNING FROM REVIEW PAGE
+  useEffect(() => {
+    if (activeSection === "Submissions" && selectedAssessmentId) {
+      fetchSubmissions(selectedAssessmentId);
+    }
+  }, [activeSection]);
+
+  // OPEN SUBMISSIONS PAGE AFTER RETURNING FROM REVIEW
   useEffect(() => {
 
-    const handler = (event) => {
+    const openSubmissions =
+      localStorage.getItem("openSubmissions");
+
+    const savedAssessmentId =
+      localStorage.getItem(
+        "selectedAssessmentId"
+      );
+
+    if (
+      openSubmissions === "true" &&
+      savedAssessmentId
+    ) {
+
+      setActiveSection(
+        "Submissions"
+      );
+
+      setSelectedAssessmentId(
+        savedAssessmentId
+      );
 
       fetchSubmissions(
-        event.detail
+        savedAssessmentId
       );
 
-    };
-
-    window.addEventListener(
-      "loadSubmissions",
-      handler
-    );
-
-    return () =>
-      window.removeEventListener(
-        "loadSubmissions",
-        handler
+      localStorage.removeItem(
+        "openSubmissions"
       );
+
+    }
 
   }, []);
 
@@ -199,9 +192,7 @@ export default function Home() {
   const fetchAssessments = async () => {
     try {
       const facultyEmail = localStorage.getItem("userEmail");
-      const response = await fetch(
-        `http://localhost:8000/assessment/all/${facultyEmail}`
-      );
+      const response = await fetch(`http://localhost:8000/assessment/all/${facultyEmail}`);
       const data = await response.json();
       const sorted = [...data].sort((a, b) => {
         if (a._id < b._id) return 1;
@@ -214,103 +205,50 @@ export default function Home() {
     }
   };
 
-  const fetchSubmissions = async (
-    assessmentId
-  ) => {
 
+  const fetchSubmissions = async (assessmentId) => {
     try {
-
       setLoadingSubmissions(true);
-
-      const response = await fetch(
-        `http://localhost:8000/submission/assessment/${assessmentId}`
-      );
-
+      const response = await fetch(`http://localhost:8000/submission/assessment/${assessmentId}`);
       const data = await response.json();
-
       setAssessmentSubmissions(data);
-
     } catch (error) {
-
       console.error(error);
-
-      toast.error(
-        "Failed to load submissions"
-      );
-
+      toast.error("Failed to load submissions");
     } finally {
-
       setLoadingSubmissions(false);
-
     }
   };
 
 
-  const evaluateSubmission = async (
-    submissionId
-  ) => {
-
+  const evaluateSubmission = async (submissionId) => {
     try {
-
       const response = await fetch(
         `http://localhost:8000/submission/evaluate/${submissionId}`,
-        {
-          method: "POST"
-        }
+        { method: "POST" }
       );
-
-      const data =
-        await response.json();
-
+      const data = await response.json();
       if (!response.ok) {
-        throw new Error(
-          data.detail ||
-          "Evaluation failed"
-        );
+        throw new Error(data.detail || "Evaluation failed");
       }
-
-      alert(
-        "Evaluation Completed"
-      );
-
-      fetchSubmissions(
-        selectedAssessmentId
-      );
-
+      alert("Evaluation Completed");
+      fetchSubmissions(selectedAssessmentId);
     } catch (error) {
-
       console.error(error);
-
-      alert(
-        "Evaluation Failed"
-      );
-
+      alert("Evaluation Failed");
     }
   };
 
 
-  const viewSubmission = async (
-    submissionId
-  ) => {
-
+  const viewSubmission = async (submissionId) => {
     try {
-
-      const response = await fetch(
-        `http://localhost:8000/submission/view/${submissionId}`
-      );
-
+      const response = await fetch(`http://localhost:8000/submission/view/${submissionId}`);
       const data = await response.json();
-
       setSubmissionDetails(data);
-
       setShowSubmissionDetails(true);
-
     } catch (error) {
-
       console.error(error);
-
       alert("Failed to load submission");
-
     }
   };
 
@@ -327,13 +265,7 @@ export default function Home() {
     setSelectedYears([]);
     setAvailableFrom("");
     setAvailableTo("");
-    setQuestions([{
-      question: "",
-      answer_key: "",
-      rubric: "",
-      marks: "",
-      expected_length: ""
-    }]);
+    setQuestions([{ question: "", answer_key: "", rubric: "", marks: "", expected_length: "" }]);
     setEditingAssessmentId(null);
   };
 
@@ -348,17 +280,9 @@ export default function Home() {
 
   // ADD QUESTION
   const addQuestionCard = () => {
-
     setQuestions([
       ...questions,
-      {
-        question_id: questions.length + 1,
-        question: "",
-        answer_key: "",
-        rubric: "",
-        marks: "",
-        expected_length: ""
-      }
+      { question_id: questions.length + 1, question: "", answer_key: "", rubric: "", marks: "", expected_length: "" }
     ]);
   };
 
@@ -380,16 +304,10 @@ export default function Home() {
 
   // BUILD PAYLOAD
   const buildPayload = (status) => ({
-    title,
-    subjectCode,
-    subjectName,
-    examDate,
-    duration,
-    instructions,
+    title, subjectCode, subjectName, examDate, duration, instructions,
     departments: selectedDepartments.map((dept) => dept.value),
     years: selectedYears.map((year) => year.value),
-    availableFrom,
-    availableTo,
+    availableFrom, availableTo,
     questions: questions.map((q, index) => ({
       ...q,
       question_id: q.question_id || index + 1,
@@ -411,13 +329,7 @@ export default function Home() {
       return false;
     }
     for (let q of questions) {
-      if (
-        !q.question.trim() ||
-        !q.answer_key.trim() ||
-        !q.rubric.trim() ||
-        !q.marks ||
-        !q.expected_length.trim()
-      ) {
+      if (!q.question.trim() || !q.answer_key.trim() || !q.rubric.trim() || !q.marks || !q.expected_length.trim()) {
         toast.error("Please fill all question fields");
         return false;
       }
@@ -436,14 +348,11 @@ export default function Home() {
     if (!validateFields()) return;
     try {
       setSaving(true);
-      const response = await fetch(
-        "http://localhost:8000/assessment/create",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(buildPayload("Draft"))
-        }
-      );
+      const response = await fetch("http://localhost:8000/assessment/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buildPayload("Draft"))
+      });
       if (!response.ok) throw new Error("Failed to save");
       toast.success("Assessment saved successfully");
       resetFields();
@@ -464,14 +373,11 @@ export default function Home() {
     if (!validateFields()) return;
     try {
       setSaving(true);
-      const response = await fetch(
-        "http://localhost:8000/assessment/create",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(buildPayload("Published"))
-        }
-      );
+      const response = await fetch("http://localhost:8000/assessment/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buildPayload("Published"))
+      });
       if (!response.ok) throw new Error();
       toast.success("Assessment published successfully");
       resetFields();
@@ -536,9 +442,7 @@ export default function Home() {
 
                 <div className="bg-white rounded-[30px] p-7 border border-slate-200 shadow-sm">
                   <p className="text-slate-500 text-sm mb-2">Total Assessments</p>
-                  <h2 className="text-5xl font-bold text-slate-900">
-                    {savedAssessments.length}
-                  </h2>
+                  <h2 className="text-5xl font-bold text-slate-900">{savedAssessments.length}</h2>
                 </div>
 
                 <div className="bg-white rounded-[30px] p-7 border border-slate-200 shadow-sm">
@@ -574,16 +478,12 @@ export default function Home() {
                   <h2 className="text-4xl font-bold text-slate-900">
                     {editingAssessmentId ? "Edit Assessment" : "Create Assessment"}
                   </h2>
-                  <p className="text-slate-500 mt-3 text-lg">
-                    Build professional assessments for students
-                  </p>
+                  <p className="text-slate-500 mt-3 text-lg">Build professional assessments for students</p>
                 </div>
 
                 {/* TITLE */}
                 <div className="mb-8">
-                  <label className="block text-sm font-semibold text-slate-600 mb-4">
-                    Assessment Title
-                  </label>
+                  <label className="block text-sm font-semibold text-slate-600 mb-4">Assessment Title</label>
                   <input
                     type="text"
                     placeholder="Enter assessment title"
@@ -596,9 +496,7 @@ export default function Home() {
                 {/* SUBJECT CODE & NAME */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                   <div>
-                    <label className="block text-sm font-semibold text-slate-600 mb-4">
-                      Subject Code
-                    </label>
+                    <label className="block text-sm font-semibold text-slate-600 mb-4">Subject Code</label>
                     <input
                       type="text"
                       placeholder="e.g. CS301"
@@ -608,9 +506,7 @@ export default function Home() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-600 mb-4">
-                      Subject Name
-                    </label>
+                    <label className="block text-sm font-semibold text-slate-600 mb-4">Subject Name</label>
                     <input
                       type="text"
                       placeholder="e.g. Database Management Systems"
@@ -624,9 +520,7 @@ export default function Home() {
                 {/* DEPARTMENT & YEAR */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                   <div>
-                    <label className="block text-sm font-semibold text-slate-600 mb-4">
-                      Department
-                    </label>
+                    <label className="block text-sm font-semibold text-slate-600 mb-4">Department</label>
                     <Select
                       isMulti
                       options={[
@@ -644,9 +538,7 @@ export default function Home() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-600 mb-4">
-                      Year
-                    </label>
+                    <label className="block text-sm font-semibold text-slate-600 mb-4">Year</label>
                     <Select
                       isMulti
                       options={[
@@ -665,9 +557,7 @@ export default function Home() {
                 {/* DATE & DURATION */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                   <div>
-                    <label className="block text-sm font-semibold text-slate-600 mb-4">
-                      Date of Examination
-                    </label>
+                    <label className="block text-sm font-semibold text-slate-600 mb-4">Date of Examination</label>
                     <input
                       type="date"
                       className="w-full border border-slate-200 bg-slate-50 p-5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition text-slate-700"
@@ -676,9 +566,7 @@ export default function Home() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-600 mb-4">
-                      Total Time
-                    </label>
+                    <label className="block text-sm font-semibold text-slate-600 mb-4">Total Time</label>
                     <input
                       type="text"
                       placeholder="e.g. 90 Minutes"
@@ -692,9 +580,7 @@ export default function Home() {
                 {/* AVAILABLE FROM & TO */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                   <div>
-                    <label className="block text-sm font-semibold text-slate-600 mb-4">
-                      Available From
-                    </label>
+                    <label className="block text-sm font-semibold text-slate-600 mb-4">Available From</label>
                     <input
                       type="datetime-local"
                       value={availableFrom}
@@ -703,9 +589,7 @@ export default function Home() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-600 mb-4">
-                      Available To
-                    </label>
+                    <label className="block text-sm font-semibold text-slate-600 mb-4">Available To</label>
                     <input
                       type="datetime-local"
                       value={availableTo}
@@ -717,9 +601,7 @@ export default function Home() {
 
                 {/* INSTRUCTIONS */}
                 <div className="mb-10">
-                  <label className="block text-sm font-semibold text-slate-600 mb-4">
-                    Exam Instructions
-                  </label>
+                  <label className="block text-sm font-semibold text-slate-600 mb-4">Exam Instructions</label>
                   <textarea
                     rows={5}
                     placeholder="Enter exam instructions for students"
@@ -789,10 +671,9 @@ export default function Home() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                 {savedAssessments
-                  .filter(
-                    (assessment) =>
-                      assessment.status === "Draft" &&
-                      assessment.title.toLowerCase().includes(searchTerm.toLowerCase())
+                  .filter((assessment) =>
+                    assessment.status === "Draft" &&
+                    assessment.title.toLowerCase().includes(searchTerm.toLowerCase())
                   )
                   .map((assessment) => (
                     <AssessmentCard
@@ -826,10 +707,9 @@ export default function Home() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                 {savedAssessments
-                  .filter(
-                    (assessment) =>
-                      assessment.status === "Published" &&
-                      assessment.title.toLowerCase().includes(searchTerm.toLowerCase())
+                  .filter((assessment) =>
+                    assessment.status === "Published" &&
+                    assessment.title.toLowerCase().includes(searchTerm.toLowerCase())
                   )
                   .map((assessment) => (
                     <AssessmentCard
@@ -868,18 +748,12 @@ export default function Home() {
           {activeSection === "Submissions" && (
             <div>
               <div className="mb-8">
-                <h2 className="text-4xl font-bold text-slate-900 mb-3">
-                  Student Submissions
-                </h2>
-                <p className="text-slate-500 text-lg">
-                  Assessment ID: {selectedAssessmentId}
-                </p>
+                <h2 className="text-4xl font-bold text-slate-900 mb-3">Student Submissions</h2>
+                <p className="text-slate-500 text-lg">Assessment ID: {selectedAssessmentId}</p>
               </div>
 
               {loadingSubmissions ? (
-                <div className="bg-white rounded-3xl p-8">
-                  Loading submissions...
-                </div>
+                <div className="bg-white rounded-3xl p-8">Loading submissions...</div>
               ) : (
                 <>
                   <div className="bg-white rounded-3xl shadow-sm overflow-hidden">
@@ -889,6 +763,7 @@ export default function Home() {
                           <th className="p-4 text-left">Student ID</th>
                           <th className="p-4 text-left">Email</th>
                           <th className="p-4 text-left">Status</th>
+                          <th className="p-4 text-left">Final Marks</th>
                           <th className="p-4 text-left">View</th>
                           <th className="p-4 text-left">Evaluate</th>
                         </tr>
@@ -896,33 +771,50 @@ export default function Home() {
                       <tbody>
                         {assessmentSubmissions.map((submission) => (
                           <tr key={submission.submission_id} className="border-t">
+
                             <td className="p-4">{submission.student_id}</td>
+
                             <td className="p-4">{submission.student_email}</td>
+
                             <td className="p-4">{submission.status}</td>
+
+                            <td className="p-4 font-semibold text-[#071330]">
+                              {submission.final_marks > 0 ? submission.final_marks : "-"}
+                            </td>
+
                             <td className="p-4">
                               <button
-                                onClick={() =>
+                                onClick={() => {
+
+                                  localStorage.setItem(
+                                    "selectedAssessmentId",
+                                    selectedAssessmentId
+                                  );
+
                                   router.push(
                                     `/assessment-review/${submission.submission_id}`
-                                  )
-                                }
+                                  );
+
+                                }}
                                 className="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded-lg"
                               >
                                 View
                               </button>
                             </td>
+
                             <td className="p-4">
                               <button
                                 disabled={submission.status === "Evaluated"}
                                 onClick={() => evaluateSubmission(submission.submission_id)}
                                 className={`px-4 py-2 rounded-lg text-white ${submission.status === "Evaluated"
-                                    ? "bg-green-600 cursor-not-allowed"
-                                    : "bg-blue-600 hover:bg-blue-700"
+                                  ? "bg-green-600 cursor-not-allowed"
+                                  : "bg-blue-600 hover:bg-blue-700"
                                   }`}
                               >
                                 {submission.status === "Evaluated" ? "Evaluated" : "Evaluate"}
                               </button>
                             </td>
+
                           </tr>
                         ))}
                       </tbody>

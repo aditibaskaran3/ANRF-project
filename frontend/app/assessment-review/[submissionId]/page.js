@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 export default function AssessmentReviewPage() {
+
+    const router = useRouter();
 
     const params = useParams();
     const submissionId = params.submissionId;
@@ -83,6 +85,24 @@ export default function AssessmentReviewPage() {
     return (
         <div className="min-h-screen bg-[#f5f7fb] p-8">
 
+            <button
+                onClick={() => {
+
+                    localStorage.setItem(
+                        "openSubmissions",
+                        "true"
+                    );
+
+                    router.push("/");
+
+                }}
+                className="flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-4"
+            >
+                <span className="text-xl">←</span>
+                <span className="font-semibold">
+                    Back to Submissions
+                </span>
+            </button>
             <h1 className="text-3xl font-bold text-slate-900 mb-8">
                 Assessment Review
             </h1>
