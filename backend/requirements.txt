@@ -8,3 +8,4 @@ pydantic
 langchain-core
 langchain-groq
 pandas
+bcrypt==4.0.1
