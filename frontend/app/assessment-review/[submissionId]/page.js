@@ -21,7 +21,7 @@ export default function AssessmentReviewPage() {
     const fetchReview = async () => {
         try {
             const response = await fetch(
-                `http://localhost:8000/submission/review/${submissionId}`
+                `https://anrf-backend.onrender.com/submission/review/${submissionId}`
             );
             const data = await response.json();
             setQuestions(data);
@@ -39,7 +39,7 @@ export default function AssessmentReviewPage() {
                     facultyMarks[q.question_id] ?? q.ai_marks;
 
                 await fetch(
-                    "http://localhost:8000/submission/save-correction",
+                    "https://anrf-backend.onrender.com/submission/save-correction",
                     {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },

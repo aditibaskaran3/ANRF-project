@@ -186,7 +186,7 @@ export default function Home() {
     try {
       const facultyEmail = localStorage.getItem("userEmail");
       const response = await fetch(
-        `http://localhost:8000/assessment/all/${facultyEmail}`
+        `https://anrf-backend.onrender.com/assessment/all/${facultyEmail}`
       );
       const data = await response.json();
       const sorted = [...data].sort((a, b) => {
@@ -205,7 +205,7 @@ export default function Home() {
     try {
       setLoadingSubmissions(true);
       const response = await fetch(
-        `http://localhost:8000/submission/assessment/${assessmentId}`
+        `https://anrf-backend.onrender.com/submission/assessment/${assessmentId}`
       );
       const data = await response.json();
       setAssessmentSubmissions(data);
@@ -222,7 +222,7 @@ export default function Home() {
     setEvaluatingSubmission(submissionId);
     try {
       const response = await fetch(
-        `http://localhost:8000/submission/evaluate/${submissionId}`,
+        `https://anrf-backend.onrender.com/submission/evaluate/${submissionId}`,
         { method: "POST" }
       );
       const data = await response.json();
@@ -368,7 +368,7 @@ export default function Home() {
     try {
       setSaving(true);
       const response = await fetch(
-        "http://localhost:8000/assessment/create",
+        "https://anrf-backend.onrender.com/assessment/create",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -396,7 +396,7 @@ export default function Home() {
     try {
       setSaving(true);
       const response = await fetch(
-        "http://localhost:8000/assessment/create",
+        "https://anrf-backend.onrender.com/assessment/create",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

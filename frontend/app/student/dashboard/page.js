@@ -41,7 +41,7 @@ export default function StudentDashboard() {
       const email = localStorage.getItem("userEmail");
 
       const assessmentResponse = await fetch(
-        `http://localhost:8000/assessment/student/${department}/${year}`
+        `https://anrf-backend.onrender.com/assessment/student/${department}/${year}`
       );
       const assessmentData = await assessmentResponse.json();
 
@@ -54,7 +54,7 @@ export default function StudentDashboard() {
       setAssessments(sorted);
 
       const submissionResponse = await fetch(
-        `http://localhost:8000/submission/student/${email}`
+        `https://anrf-backend.onrender.com/submission/student/${email}`
       );
       const submissionData = await submissionResponse.json();
       const submittedAssessmentIds = submissionData.map(
