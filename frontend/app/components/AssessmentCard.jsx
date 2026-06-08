@@ -130,7 +130,7 @@ export default function AssessmentCard({
     try {
 
       const response = await fetch(
-        `http://localhost:8000/assessment/delete/${assessment._id}`,
+        `https://anrf-project-production.up.railway.app/assessment/delete/${assessment._id}`,
         { method: "DELETE" }
       );
 

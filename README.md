@@ -104,7 +104,7 @@ uvicorn main:app --reload
 Backend runs on:
 
 ```bash
-http://127.0.0.1:8000
+anrf-project-production.up.railway.app
 ```
 
 ---
@@ -121,5 +121,5 @@ Password: admin123
 # API Documentation
 
 ```bash
-http://127.0.0.1:8000/docs
+anrf-project-production.up.railway.app/docs
 ```
