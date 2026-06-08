@@ -34,6 +34,9 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState("");
   const [editingAssessmentId, setEditingAssessmentId] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [selectedAssessmentId, setSelectedAssessmentId] = useState(null);
+  const [assessmentSubmissions, setAssessmentSubmissions] = useState([]);
+  const [loadingSubmissions, setLoadingSubmissions] = useState(false);
   const [evaluatingSubmission, setEvaluatingSubmission] = useState(null);
 
   const [questions, setQuestions] = useState([
@@ -47,9 +50,7 @@ export default function Home() {
     }
   ]);
 
-  const [selectedAssessmentId, setSelectedAssessmentId] = useState(null);
-  const [assessmentSubmissions, setAssessmentSubmissions] = useState([]);
-  const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+
   const [submissionDetails, setSubmissionDetails] = useState([]);
   const [showSubmissionDetails, setShowSubmissionDetails] = useState(false);
 
@@ -74,16 +75,19 @@ export default function Home() {
       if (hasData) {
         const choice = window.confirm("You have unsaved changes. Leave without saving?");
         if (!choice) return;
+        resetFields();
+        localStorage.removeItem("assessmentDraft");
       }
     }
     setActiveSection(newSection);
   };
 
 
-  // AUTH CHECK
+  // AUTH CHECK — must be faculty role
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) {
+    const role = localStorage.getItem("userRole");
+    if (!token || role !== "faculty") {
       router.push("/login");
     } else {
       setCheckingAuth(false);
@@ -118,8 +122,11 @@ export default function Home() {
   }, []);
 
 
-  // AUTOSAVE
+  // AUTOSAVE — only saves when there is actual content
   useEffect(() => {
+    const hasContent = title.trim() || questions.some((q) => q.question?.trim());
+    if (!hasContent) return;
+
     localStorage.setItem(
       "assessmentDraft",
       JSON.stringify({
@@ -187,6 +194,25 @@ export default function Home() {
 
     }
 
+    const handler = (event) => {
+      fetchSubmissions(event.detail);
+    };
+    window.addEventListener("loadSubmissions", handler);
+    return () => window.removeEventListener("loadSubmissions", handler);
+  }, []);
+
+
+  // OPEN SUBMISSIONS PAGE AFTER RETURNING FROM REVIEW
+  useEffect(() => {
+    const openSubmissions = localStorage.getItem("openSubmissions");
+    const savedAssessmentId = localStorage.getItem("selectedAssessmentId");
+
+    if (openSubmissions === "true" && savedAssessmentId) {
+      setActiveSection("Submissions");
+      setSelectedAssessmentId(savedAssessmentId);
+      fetchSubmissions(savedAssessmentId);
+      localStorage.removeItem("openSubmissions");
+    }
   }, []);
 
 
@@ -238,7 +264,6 @@ export default function Home() {
       alert("Evaluation Completed");
       fetchSubmissions(selectedAssessmentId);
     } catch (error) {
-
       console.error(error);
 
       alert("Evaluation Failed");
@@ -261,6 +286,9 @@ export default function Home() {
     } catch (error) {
       console.error(error);
       alert("Failed to load submission");
+      alert("Evaluation Failed");
+    } finally {
+      setEvaluatingSubmission(null);
     }
   };
 
@@ -277,25 +305,45 @@ export default function Home() {
     setSelectedYears([]);
     setAvailableFrom("");
     setAvailableTo("");
-    setQuestions([{ question: "", answer_key: "", rubric: "", marks: "", expected_length: "" }]);
+    setQuestions([{
+      question_id: "",
+      question: "",
+      answer_key: "",
+      rubric: "",
+      marks: "",
+      expected_length: ""
+    }]);
     setEditingAssessmentId(null);
   };
 
 
   // CREATE NEW ASSESSMENT
   const createNewAssessment = () => {
+    const hasData = title.trim() || questions.some((q) => q.question?.trim());
+    if (hasData) {
+      const choice = window.confirm("You have unsaved changes. Leave without saving?");
+      if (!choice) return;
+    }
     resetFields();
+    localStorage.removeItem("assessmentDraft");
     setActiveSection("Create Assessment");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
 
-  // ADD QUESTION
-  const addQuestionCard = () => {
-    setQuestions([
-      ...questions,
-      { question_id: questions.length + 1, question: "", answer_key: "", rubric: "", marks: "", expected_length: "" }
-    ]);
+  // ADD QUESTION — inserts after current index
+  const addQuestionCard = (index) => {
+    const newQuestion = {
+      question_id: "",
+      question: "",
+      answer_key: "",
+      rubric: "",
+      marks: "",
+      expected_length: ""
+    };
+    const updatedQuestions = [...questions];
+    updatedQuestions.splice(index + 1, 0, newQuestion);
+    setQuestions(updatedQuestions);
   };
 
 
@@ -575,6 +623,7 @@ export default function Home() {
                       className="w-full border border-slate-200 bg-slate-50 p-5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition text-slate-700"
                       value={examDate}
                       onChange={(e) => setExamDate(e.target.value)}
+                      onKeyDown={(e) => e.preventDefault()}
                     />
                   </div>
                   <div>
@@ -597,6 +646,7 @@ export default function Home() {
                       type="datetime-local"
                       value={availableFrom}
                       onChange={(e) => setAvailableFrom(e.target.value)}
+                      onKeyDown={(e) => e.preventDefault()}
                       className="w-full border border-slate-200 bg-slate-50 p-5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition"
                     />
                   </div>
@@ -606,6 +656,7 @@ export default function Home() {
                       type="datetime-local"
                       value={availableTo}
                       onChange={(e) => setAvailableTo(e.target.value)}
+                      onKeyDown={(e) => e.preventDefault()}
                       className="w-full border border-slate-200 bg-slate-50 p-5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-400 transition"
                     />
                   </div>
@@ -703,6 +754,8 @@ export default function Home() {
                       setInstructions={setInstructions}
                       setSelectedDepartments={setSelectedDepartments}
                       setSelectedYears={setSelectedYears}
+                      setAvailableFrom={setAvailableFrom}
+                      setAvailableTo={setAvailableTo}
                     />
                   ))}
               </div>
@@ -741,6 +794,8 @@ export default function Home() {
                       setInstructions={setInstructions}
                       setSelectedDepartments={setSelectedDepartments}
                       setSelectedYears={setSelectedYears}
+                      setAvailableFrom={setAvailableFrom}
+                      setAvailableTo={setAvailableTo}
                     />
                   ))}
               </div>

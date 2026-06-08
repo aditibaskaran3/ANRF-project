@@ -131,8 +131,8 @@ export default function RegisterPage() {
             >
               <option value="">Select Year</option>
               {YEARS.map((y) => (
-                <option key={y} value={y}>Year {y}</option>
-              ))}
+  <option key={y} value={y}>{y}</option>
+))}
             </select>
           </div>
 

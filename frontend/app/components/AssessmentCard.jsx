@@ -18,7 +18,9 @@ export default function AssessmentCard({
   setDuration,
   setInstructions,
   setSelectedDepartments,
-  setSelectedYears
+  setSelectedYears,
+  setAvailableFrom,
+  setAvailableTo
 }) {
 
   const router = useRouter();
@@ -40,6 +42,8 @@ export default function AssessmentCard({
     if (setExamDate) setExamDate(assessment.examDate || "");
     if (setDuration) setDuration(assessment.duration || "");
     if (setInstructions) setInstructions(assessment.instructions || "");
+    if (setAvailableFrom) setAvailableFrom(assessment.availableFrom || "");
+    if (setAvailableTo) setAvailableTo(assessment.availableTo || "");
 
     if (setSelectedDepartments) {
       const depts = (assessment.departments || []).map(d => ({
@@ -84,6 +88,8 @@ export default function AssessmentCard({
     if (setExamDate) setExamDate(assessment.examDate || "");
     if (setDuration) setDuration(assessment.duration || "");
     if (setInstructions) setInstructions(assessment.instructions || "");
+    if (setAvailableFrom) setAvailableFrom(assessment.availableFrom || "");
+    if (setAvailableTo) setAvailableTo(assessment.availableTo || "");
 
     if (setSelectedDepartments) {
       const depts = (assessment.departments || []).map(d => ({
@@ -271,19 +277,9 @@ export default function AssessmentCard({
 
             <button
               onClick={() => {
-
-                setSelectedAssessmentId(
-                  assessment._id
-                );
-
-                fetchSubmissions(
-                  assessment._id
-                );
-
-                setActiveSection(
-                  "Submissions"
-                );
-
+                setSelectedAssessmentId(assessment._id);
+                fetchSubmissions(assessment._id);
+                setActiveSection("Submissions");
               }}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-semibold text-sm transition"
             >

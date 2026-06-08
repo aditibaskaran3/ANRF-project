@@ -64,7 +64,8 @@ def submit_assessment(data: dict):
         "student_email": data["student_email"],
         "student_id": student_id,
         "submitted_at": datetime.now(),
-        "status": "Pending Evaluation"
+        "status": "Pending Evaluation",
+        "final_marks": 0
     }
 
     result = db.StudentSubmission.insert_one(submission)
@@ -79,6 +80,7 @@ def submit_assessment(data: dict):
 
         db.StudentAnswer.insert_one({
             "student_id": student_id,
+            "assessment_id": data["assessment_id"],
             "question_id": stored_question_id,
             "answer_text": answer_text,
             "word_count": len(answer_text.split())
@@ -104,6 +106,7 @@ def get_student_submissions(student_email: str):
     return submissions
 
 
+# GET ALL SUBMISSIONS
 @router.get("/all")
 def get_all_submissions():
 
@@ -128,6 +131,7 @@ def get_all_submissions():
     return result
 
 
+# GET SUBMISSIONS BY ASSESSMENT
 @router.get("/assessment/{assessment_id}")
 def get_submissions_by_assessment(assessment_id: str):
 
@@ -147,13 +151,26 @@ def get_submissions_by_assessment(assessment_id: str):
         for correction in corrections:
             total_marks += float(correction.get("faculty_marks", 0))
 
+        # Use stored final_marks if Finalized, else calculate from FacultyCorrection
+        status = submission.get("status", "Pending Evaluation")
+
+        if status == "Finalized":
+            total_marks = submission.get("final_marks", 0)
+        else:
+            total_marks = 0
+            corrections = list(
+                db.FacultyCorrection.find({"submission_id": str(submission["_id"])})
+            )
+            for correction in corrections:
+                total_marks += float(correction.get("faculty_marks", 0))
+
         result.append({
             "submission_id": str(submission["_id"]),
             "student_id": submission["student_id"],
             "student_email": submission["student_email"],
             "status": submission.get("status", "Pending Evaluation"),
             "submitted_at": submission["submitted_at"],
-            "final_marks": round(total_marks)
+            "final_marks": round(total_marks, 2)
         })
 
     return result
@@ -231,6 +248,99 @@ def review_submission(submission_id: str):
     return result
 
 
+# VIEW SUBMISSION — student answers only
+@router.get("/view/{submission_id}")
+def view_submission(submission_id: str):
+
+    submission = db.StudentSubmission.find_one(
+        {"_id": ObjectId(submission_id)}
+    )
+
+    if not submission:
+        raise HTTPException(status_code=404, detail="Submission not found")
+
+    student_id = submission["student_id"]
+    assessment_id = submission["assessment_id"]
+
+    answers = list(
+        db.StudentAnswer.find({
+            "student_id": student_id,
+            "assessment_id": assessment_id
+        })
+    )
+
+    result = []
+    for answer in answers:
+        result.append({
+            "question_id": answer["question_id"],
+            "answer": answer["answer_text"]
+        })
+
+    return result
+
+
+# REVIEW SUBMISSION — for faculty review page with AI marks
+@router.get("/review/{submission_id}")
+def review_submission(submission_id: str):
+
+    submission = db.StudentSubmission.find_one(
+        {"_id": ObjectId(submission_id)}
+    )
+
+    if not submission:
+        raise HTTPException(status_code=404, detail="Submission not found")
+
+    assessment_id = submission["assessment_id"]
+    student_id = submission["student_id"]
+
+    questions = list(
+        db.Question.find({"assessment_id": assessment_id})
+    )
+
+    result = []
+
+    for question in questions:
+
+        answer = db.StudentAnswer.find_one(
+            {
+                "student_id": student_id,
+                "assessment_id": assessment_id,
+                "question_id": question["question_id"]
+            }
+        )
+
+        evaluation = db.EvaluationResult.find_one(
+            {
+                "student_id": student_id,
+                "question_id": question["question_id"],
+                "assessment_id": assessment_id
+            }
+        )
+
+        # Check if faculty has already corrected this question
+        correction = db.FacultyCorrection.find_one(
+            {
+                "submission_id": submission_id,
+                "question_id": question["question_id"]
+            }
+        )
+
+        ai_marks = evaluation.get("suggested_marks", 0) if evaluation else 0
+        final_marks = correction.get("faculty_marks", ai_marks) if correction else ai_marks
+
+        result.append({
+            "question_id": question["question_id"],
+            "question": question.get("question_text", ""),
+            "max_marks": question.get("max_marks", 0),
+            "student_answer": answer["answer_text"] if answer else "",
+            "ai_marks": ai_marks,
+            "faculty_marks": final_marks
+        })
+
+    return result
+
+
+# EVALUATE SUBMISSION — runs ML pipeline
 @router.post("/evaluate/{submission_id}")
 def evaluate_submission(submission_id: str):
 
@@ -249,7 +359,11 @@ def evaluate_submission(submission_id: str):
 
     question_ids = [q["question_id"] for q in questions]
 
-    scores = evaluate_pipeline(submission["student_id"], question_ids)
+    scores = evaluate_pipeline(
+        submission["student_id"],
+        question_ids,
+        assessment_id
+    )
 
     db.StudentSubmission.update_one(
         {"_id": ObjectId(submission_id)},
@@ -262,6 +376,7 @@ def evaluate_submission(submission_id: str):
     }
 
 
+# SAVE FACULTY CORRECTION
 @router.post("/save-correction")
 def save_correction(data: dict):
 
@@ -278,6 +393,21 @@ def save_correction(data: dict):
             }
         },
         upsert=True
+    )
+
+    # Recalculate total from all corrections for this submission
+    corrections = list(
+        db.FacultyCorrection.find({"submission_id": data["submission_id"]})
+    )
+    total = sum(float(c.get("faculty_marks", 0)) for c in corrections)
+
+    # Update final_marks and status in StudentSubmission
+    db.StudentSubmission.update_one(
+        {"_id": ObjectId(data["submission_id"])},
+        {"$set": {
+            "status": "Finalized",
+            "final_marks": round(total, 2)
+        }}
     )
 
     return {"message": "Marks Saved Successfully"}

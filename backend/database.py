@@ -1,10 +1,15 @@
+import os
+
 from pymongo import MongoClient
 
-MONGO_URL = "mongodb://localhost:27017"
+MONGO_URL = os.getenv(
+    "MONGO_URL",
+    "mongodb://localhost:27017"
+)
 
 client = MongoClient(MONGO_URL)
 
-db=client["Exam"]
+db = client["Exam"]
 
 collections = [
     "Assessment",
@@ -23,12 +28,17 @@ for col in collections:
 
 users_collection = db["users"]
 
-# db = client["academic_evaluation_system"]
+# INDEXES
 
-# assessment_collection = db["assessments"]
+users_collection.create_index(
+    "email",
+    unique=True
+)
 
-# student_submissions_collection = db["student_submissions"]
-
-# student_answers_collection = db["student_answers"]
-
-
+db.StudentSubmission.create_index(
+    [
+        ("assessment_id", 1),
+        ("student_email", 1)
+    ],
+    unique=True
+)

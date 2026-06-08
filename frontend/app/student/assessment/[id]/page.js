@@ -12,7 +12,6 @@ export default function StudentAssessmentPage() {
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-
   const [answers, setAnswers] = useState({});
 
   useEffect(() => {
@@ -21,345 +20,238 @@ export default function StudentAssessmentPage() {
     }
   }, [params.id]);
 
+  // UNSAVED CHANGES WARNING — browser tab close / refresh
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      const hasAnswers = Object.values(answers).some(a => a.trim());
+      if (hasAnswers) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [answers]);
+
   const fetchAssessment = async () => {
-
     try {
-
       const [assessmentRes, questionsRes] = await Promise.all([
-        fetch(
-          `http://localhost:8000/assessment/view/${params.id}`
-        ),
-        fetch(
-          `http://localhost:8000/assessment/questions/${params.id}`
-        ),
+        fetch(`http://localhost:8000/assessment/view/${params.id}`),
+        fetch(`http://localhost:8000/assessment/questions/${params.id}`),
       ]);
-
       const data = await assessmentRes.json();
       const questionData = await questionsRes.json();
-
       setAssessment(data);
       setQuestions(Array.isArray(questionData) ? questionData : []);
-
     } catch (error) {
-
       console.error(error);
-
     } finally {
-
       setLoading(false);
     }
   };
 
-  const handleAnswerChange = (
-    questionId,
-    value
-  ) => {
-
+  const handleAnswerChange = (questionId, value) => {
     setAnswers((prev) => ({
       ...prev,
       [String(questionId)]: value
     }));
   };
 
+  const getWordCount = (text) => {
+    return (text || "").split(/\s+/).filter(Boolean).length;
+  };
+
   const submitAssessment = async () => {
-
     try {
-
       setSubmitting(true);
 
       const registerNumber = localStorage.getItem("registerNumber");
-
       if (!registerNumber) {
-        alert(
-          "Registration number not found. Please log in again."
-        );
+        alert("Registration number not found. Please log in again.");
         return;
       }
 
-      const response = await fetch(
-        "http://localhost:8000/submission/submit",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
+      const response = await fetch("http://localhost:8000/submission/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          assessment_id: assessment._id,
+          student_email: localStorage.getItem("userEmail"),
+          student_id: registerNumber,
+          answers
+        })
+      });
 
-            assessment_id:
-              assessment._id,
-
-            student_email:
-              localStorage.getItem(
-                "userEmail"
-              ),
-
-            student_id:
-              registerNumber,
-
-            answers
-          })
-        }
-      );
-
-      const data =
-        await response.json();
+      const data = await response.json();
 
       if (!response.ok) {
-        alert(
-          data.detail ||
-          data.message ||
-          "Failed to submit assessment"
-        );
+        alert(data.detail || data.message || "Failed to submit assessment");
         return;
       }
 
-      alert(
-        data.message ||
-        "Assessment Submitted Successfully"
-      );
-
-      router.push(
-        "/student/dashboard"
-      );
+      // Clear answers so unsaved warning doesn't trigger after submit
+      setAnswers({});
+      alert(data.message || "Assessment Submitted Successfully");
+      router.push("/student/dashboard");
 
     } catch (error) {
-
       console.error(error);
-
-      alert(
-        "Failed to submit assessment"
-      );
-
+      alert("Failed to submit assessment");
     } finally {
-
       setSubmitting(false);
     }
   };
 
   if (loading) {
-
     return (
-
-      <div className="min-h-screen flex items-center justify-center bg-slate-100">
-
-        <h2 className="text-xl font-semibold text-slate-900">
-          Loading Assessment...
-        </h2>
-
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 via-slate-50 to-slate-200">
+        <div className="text-center">
+          <div className="w-14 h-14 border-4 border-slate-300 border-t-slate-900 rounded-full animate-spin mx-auto mb-6"></div>
+          <h2 className="text-2xl font-bold text-slate-900">Loading Assessment...</h2>
+        </div>
       </div>
-
     );
   }
 
   if (!assessment) {
-
     return (
-
-      <div className="min-h-screen flex items-center justify-center bg-slate-100">
-
-        <h2 className="text-xl font-semibold text-red-600">
-          Assessment Not Found
-        </h2>
-
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 via-slate-50 to-slate-200">
+        <h2 className="text-xl font-semibold text-red-600">Assessment Not Found</h2>
       </div>
-
     );
   }
 
   return (
-
-    <div className="min-h-screen bg-slate-100 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-slate-50 to-slate-200 p-8">
 
       <div className="max-w-5xl mx-auto">
 
+        {/* ASSESSMENT HEADER */}
         <div className="bg-white rounded-[30px] border border-slate-200 p-10 shadow-sm mb-8">
 
           <div className="mb-6 border-b border-slate-200 pb-6">
-
             <h1 className="text-4xl font-bold text-slate-900 mb-3">
               {assessment.title}
             </h1>
-
-            <p className="text-slate-500 text-lg">
-              Student Assessment
-            </p>
-
+            <p className="text-slate-500 text-lg">Student Assessment</p>
           </div>
 
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 text-slate-800">
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-              <p>
-                <span className="font-semibold">
-                  Subject Code:
-                </span>{" "}
-                {assessment.subjectCode}
-              </p>
-
-              <p>
-                <span className="font-semibold">
-                  Subject Name:
-                </span>{" "}
-                {assessment.subjectName}
-              </p>
-
-              <p>
-                <span className="font-semibold">
-                  Examination Date:
-                </span>{" "}
-                {new Date(
-                  assessment.examDate
-                ).toLocaleDateString("en-GB")}
-              </p>
-
-              <p>
-                <span className="font-semibold">
-                  Duration:
-                </span>{" "}
-                {assessment.duration}
-              </p>
-
-              <p>
-                <span className="font-semibold">
-                  Department:
-                </span>{" "}
-                {assessment.departments?.join(", ")}
-              </p>
-
-              <p>
-                <span className="font-semibold">
-                  Year:
-                </span>{" "}
-                {assessment.years?.join(", ")}
-              </p>
-
-              <p>
-                <span className="font-semibold">
-                  Available From:
-                </span>{" "}
-                {new Date(
-                  assessment.availableFrom
-                ).toLocaleString("en-GB")}
-              </p>
-
-              <p>
-                <span className="font-semibold">
-                  Available To:
-                </span>{" "}
-                {new Date(
-                  assessment.availableTo
-                ).toLocaleString("en-GB")}
-              </p>
-
+              <p><span className="font-semibold">Subject Code:</span> {assessment.subjectCode}</p>
+              <p><span className="font-semibold">Subject Name:</span> {assessment.subjectName}</p>
+              <p><span className="font-semibold">Examination Date:</span> {new Date(assessment.examDate).toLocaleDateString("en-GB")}</p>
+              <p><span className="font-semibold">Duration:</span> {assessment.duration} mins</p>
+              <p><span className="font-semibold">Department:</span> {assessment.departments?.join(", ")}</p>
+              <p><span className="font-semibold">Year:</span> {assessment.years?.join(", ")}</p>
+              <p><span className="font-semibold">Available From:</span> {new Date(assessment.availableFrom).toLocaleString("en-GB")}</p>
+              <p><span className="font-semibold">Available To:</span> {new Date(assessment.availableTo).toLocaleString("en-GB")}</p>
             </div>
-
           </div>
-
         </div>
 
-        <div className="bg-yellow-50 border border-yellow-200 rounded-3xl p-6 mb-8">
-
-          <h2 className="text-xl font-bold text-slate-900 mb-3">
-            Instructions
-          </h2>
-
-          <p className="text-slate-700 whitespace-pre-line">
-            {assessment.instructions}
-          </p>
-
+        {/* INSTRUCTIONS */}
+        <div className="bg-yellow-50 border border-yellow-200 rounded-[30px] p-6 mb-8">
+          <h2 className="text-xl font-bold text-slate-900 mb-3">Instructions</h2>
+          <p className="text-slate-700 whitespace-pre-line">{assessment.instructions}</p>
         </div>
 
+        {/* QUESTIONS */}
         <div className="space-y-8">
-
           {(questions.length > 0
             ? questions
             : assessment.questions?.map((q, index) => ({
                 question_id: index + 1,
                 question_text: q.question,
                 max_marks: q.marks,
+                ans_length: q.expected_length
               })) || []
-          ).map(
-            (question, index) => {
+          ).map((question, index) => {
 
-              const questionId = question.question_id ?? index + 1;
+            const questionId = question.question_id ?? index + 1;
+            const answerText = answers[String(questionId)] || "";
+            const wordCount = getWordCount(answerText);
+            const expectedLength = Number(question.ans_length) || 0;
+            const isOverLimit = expectedLength > 0 && wordCount > expectedLength;
 
-              return (
-
+            return (
               <div
                 key={questionId}
-                className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm"
+                className="bg-white rounded-[30px] border border-slate-200 p-8 shadow-sm"
               >
 
+                {/* QUESTION HEADER */}
                 <div className="flex justify-between items-center mb-5">
-
                   <h2 className="text-2xl font-bold text-slate-900">
                     Question {index + 1}
                   </h2>
-
-                  <div className="bg-blue-600 text-white px-4 py-2 rounded-xl font-semibold">
+                  <div className="bg-slate-900 text-white px-4 py-2 rounded-xl font-semibold">
                     {question.max_marks ?? question.marks} Marks
                   </div>
-
                 </div>
 
+                {/* QUESTION TEXT */}
                 <div className="mb-6">
-
-                  <p className="text-slate-800 text-lg">
+                  <p className="text-slate-800 text-lg leading-7">
                     {question.question_text ?? question.question}
                   </p>
-
                 </div>
 
+                {/* ANSWER BOX */}
                 <textarea
                   rows={8}
-                  value={
-                    answers[String(questionId)] || ""
-                  }
-                  onChange={(e) =>
-                    handleAnswerChange(
-                      questionId,
-                      e.target.value
-                    )
-                  }
+                  value={answerText}
+                  onChange={(e) => handleAnswerChange(questionId, e.target.value)}
                   placeholder="Write your answer here..."
-                  className="w-full border border-slate-300 rounded-2xl p-5 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900"
+                  className={`w-full border-2 rounded-2xl p-5 focus:outline-none focus:ring-2 text-slate-900 transition ${
+                    isOverLimit
+                      ? "border-red-300 focus:ring-red-400"
+                      : "border-slate-200 focus:ring-blue-400"
+                  }`}
                 />
 
+                {/* WORD COUNT */}
+                <div className="flex justify-between items-center mt-3 px-1">
+                  <p className="text-slate-500 text-sm">
+                    Expected length:{" "}
+                    <span className="font-semibold text-slate-700">
+                      {expectedLength > 0 ? `${expectedLength} words` : "Not specified"}
+                    </span>
+                  </p>
+                  <p className={`text-sm font-semibold ${
+                    isOverLimit ? "text-red-500" : "text-slate-500"
+                  }`}>
+                    {wordCount} / {expectedLength > 0 ? expectedLength : "—"} words
+                    {isOverLimit && (
+                      <span className="ml-2 text-red-500">⚠ Over limit</span>
+                    )}
+                  </p>
+                </div>
+
               </div>
-
             );
-          }
-          )}
-
+          })}
         </div>
 
+        {/* SUBMIT BUTTON */}
         <div className="mt-8 flex justify-end">
-
           <button
             onClick={() => {
-
               const confirmSubmit = window.confirm(
                 "Once submitted, you cannot edit your answers. Do you want to continue?"
               );
-
               if (confirmSubmit) {
                 submitAssessment();
               }
-
             }}
             disabled={submitting}
-            className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-2xl font-semibold transition disabled:opacity-50"
+            className="bg-slate-900 hover:bg-slate-700 text-white px-10 py-4 rounded-2xl font-semibold transition disabled:opacity-50 text-lg"
           >
-            {submitting
-              ? "Submitting..."
-              : "Submit Assessment"}
+            {submitting ? "Submitting..." : "Submit Assessment"}
           </button>
-
         </div>
 
       </div>
-
     </div>
   );
 }
