@@ -110,7 +110,7 @@ Deploying....
 
 ---
 
-# Faculty Login Credentials
+# Admin Login Credentials
 
 ```text
 Email: admin@gmail.com
