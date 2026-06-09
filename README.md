@@ -105,6 +105,7 @@ Backend runs on:
 
 ```bash
 anrf-project-production.up.railway.app
+Deploying...
 ```
 
 ---
